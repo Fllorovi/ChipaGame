@@ -1,0 +1,256 @@
+
+"use client";
+
+import { useState } from "react";
+import type { FormEvent } from "react";
+import Link from "next/link";
+
+export default function RegisterPage() {
+  const [showPassword, setShowPassword] = useState(false);
+  const [message, setMessage] = useState("");
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    setMessage(
+      "Регистрация пока не подключена. Скоро здесь можно будет зарегистрировать команду."
+    );
+  }
+
+  return (
+    <>
+      {/* Шапка — в стиле главной страницы */}
+      <header className="relative z-30 border-b border-white/10 bg-[#000C3A] text-white">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+          <Link
+            href="/"
+            className="text-2xl font-black tracking-tight"
+          >
+            Chipa<span className="text-[#55A4FE]">Game</span>
+          </Link>
+
+          <nav className="hidden items-center gap-10 text-sm font-medium text-white/75 md:flex">
+            <Link
+              href="/#about"
+              className="transition-colors hover:text-[#55A4FE]"
+            >
+              Об игре
+            </Link>
+
+            <Link
+              href="/#rating"
+              className="transition-colors hover:text-[#55A4FE]"
+            >
+              Рейтинг
+            </Link>
+          </nav>
+
+          <Link
+            href="/"
+            className="rounded-xl border border-white/15 px-5 py-2.5 text-sm font-semibold text-white/85 transition-all hover:border-[#55A4FE]/50 hover:bg-white/5 hover:text-white"
+          >
+            На главную
+          </Link>
+        </div>
+      </header>
+
+      {/* Основная область */}
+      <main className="relative isolate flex min-h-[calc(100svh-73px)] items-center overflow-hidden bg-[#000C3A] px-6 py-8 text-white">
+
+        {/* Атмосферные вспышки */}
+        
+<div
+  aria-hidden="true"
+  className="pointer-events-none absolute inset-0 z-0 overflow-hidden"
+>
+  {/* Левая вспышка */}
+  <div
+    className="storm-glow absolute -left-32 top-[5%] h-[430px] w-[520px] rounded-[42%_58%_63%_37%] blur-[65px]"
+    style={{
+      background:
+        "radial-gradient(ellipse, rgba(0,132,255,0.75), rgba(85,164,254,0.35) 45%, transparent 72%)",
+      animation: "storm-glow 13s ease-in-out -4s infinite",
+    }}
+  />
+
+  {/* Правая вспышка */}
+  <div
+    className="storm-glow absolute -right-32 top-[20%] h-[500px] w-[550px] rounded-[63%_37%_42%_58%] blur-[75px]"
+    style={{
+      background:
+        "radial-gradient(ellipse, rgba(85,164,254,0.70), rgba(0,132,255,0.30) 48%, transparent 72%)",
+      animation: "storm-glow 17s ease-in-out -9s infinite",
+    }}
+  />
+
+  {/* Нижняя вспышка */}
+  <div
+    className="storm-glow absolute -bottom-64 left-[25%] h-[450px] w-[600px] rounded-[47%_53%_35%_65%] blur-[85px]"
+    style={{
+      background:
+        "radial-gradient(ellipse, rgba(0,100,255,0.65), rgba(85,164,254,0.28) 50%, transparent 72%)",
+      animation: "storm-glow 21s ease-in-out -13s infinite",
+    }}
+  />
+
+  {/* Затемнение для сохранения контраста */}
+  <div className="absolute inset-0 bg-gradient-to-b from-[#000C3A]/15 via-transparent to-[#030822]/40" />
+</div>
+
+
+        {/* Контент */}
+        <div className="relative z-10 mx-auto grid w-full max-w-6xl grid-cols-2 items-center gap-16 max-md:grid-cols-1 max-md:gap-8">
+
+          {/* Левая информационная часть */}
+          <section className="max-md:text-center">
+            <p className="text-xs font-bold uppercase tracking-[0.3em] text-[#55A4FE]">
+              CHIPAGAME
+            </p>
+
+            <h1 className="mt-5 text-5xl font-black leading-[1.12] tracking-tight lg:text-6xl">
+              Всё начинается
+              <br />
+              с одного
+              <br />
+              <span className="text-[#55A4FE]">решения.</span>
+            </h1>
+
+            <p className="mt-6 max-w-md text-base leading-relaxed text-blue-100/60 max-md:mx-auto">
+              Зарегистрируйте свою команду и станьте частью
+              ChipaGame. Впереди вас ждёт нечто интересное.
+            </p>
+
+            <div className="mt-9 flex items-center gap-3 max-md:justify-center">
+              <div className="h-px w-12 bg-[#55A4FE]/60" />
+              <span className="text-xs font-medium uppercase tracking-[0.2em] text-blue-100/40">
+                Your experience starts here
+              </span>
+            </div>
+          </section>
+
+          {/* Форма */}
+          <section className="w-full max-w-[460px] justify-self-end max-md:mx-auto">
+            <div className="rounded-3xl border border-white/10 bg-[#071638]/75 p-7 shadow-2xl shadow-black/30 backdrop-blur-2xl sm:p-8">
+
+              <div className="mb-7">
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#55A4FE]">
+                  Регистрация
+                </p>
+
+                <h2 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">
+                  Зарегистрировать команду
+                </h2>
+
+                <p className="mt-2 text-sm text-blue-100/50">
+                  Заполните необходимые данные.
+                </p>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-5">
+
+                {/* Название команды */}
+                <div>
+                  <label
+                    htmlFor="teamName"
+                    className="mb-2 block text-sm font-semibold text-white/90"
+                  >
+                    Название команды
+                  </label>
+
+                  <input
+                    id="teamName"
+                    name="teamName"
+                    type="text"
+                    placeholder="Название вашей команды"
+                    autoComplete="organization"
+                    required
+                    minLength={2}
+                    maxLength={40}
+                    className="w-full rounded-xl border border-white/10 bg-[#030B2B]/80 px-4 py-3.5 text-sm text-white outline-none transition-all placeholder:text-white/30 focus:border-[#55A4FE] focus:ring-2 focus:ring-[#55A4FE]/15"
+                  />
+                </div>
+
+                {/* Почта */}
+                <div>
+                  <label
+                    htmlFor="email"
+                    className="mb-2 block text-sm font-semibold text-white/90"
+                  >
+                    Электронная почта
+                  </label>
+
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    placeholder="example@mail.com"
+                    autoComplete="email"
+                    required
+                    className="w-full rounded-xl border border-white/10 bg-[#030B2B]/80 px-4 py-3.5 text-sm text-white outline-none transition-all placeholder:text-white/30 focus:border-[#55A4FE] focus:ring-2 focus:ring-[#55A4FE]/15"
+                  />
+                </div>
+
+                {/* Пароль */}
+                <div>
+                  <label
+                    htmlFor="password"
+                    className="mb-2 block text-sm font-semibold text-white/90"
+                  >
+                    Пароль
+                  </label>
+
+                  <div className="relative">
+                    <input
+                      id="password"
+                      name="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Придумайте пароль"
+                      autoComplete="new-password"
+                      required
+                      minLength={8}
+                      className="w-full rounded-xl border border-white/10 bg-[#030B2B]/80 px-4 py-3.5 pr-20 text-sm text-white outline-none transition-all placeholder:text-white/30 focus:border-[#55A4FE] focus:ring-2 focus:ring-[#55A4FE]/15"
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-semibold text-[#55A4FE] transition-colors hover:text-[#ABD2FB]"
+                    >
+                      {showPassword ? "Скрыть" : "Показать"}
+                    </button>
+                  </div>
+
+                  <p className="mt-1.5 text-xs text-white/35">
+                    Не менее 8 символов.
+                  </p>
+                </div>
+
+                {/* Сообщение */}
+                {message && (
+                  <div
+                    role="status"
+                    className="rounded-xl border border-[#55A4FE]/20 bg-[#55A4FE]/10 p-3 text-xs leading-relaxed text-[#ABD2FB]"
+                  >
+                    {message}
+                  </div>
+                )}
+
+                {/* Кнопка */}
+                <button
+                  type="submit"
+                  className="group flex w-full items-center justify-center gap-3 rounded-xl bg-[#55A4FE] px-6 py-3.5 font-bold text-[#000C3A] shadow-lg shadow-blue-500/20 transition-all hover:-translate-y-0.5 hover:bg-[#78B7FF]"
+                >
+                  Зарегистрировать команду
+
+                  <span className="transition-transform group-hover:translate-x-1">
+                    →
+                  </span>
+                </button>
+              </form>
+            </div>
+          </section>
+        </div>
+      </main>
+    </>
+  );
+}
