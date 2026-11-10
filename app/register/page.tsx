@@ -1,20 +1,76 @@
-
 "use client";
 
 import { useState } from "react";
 import type { FormEvent } from "react";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
 
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  event.preventDefault();
 
-    setMessage(
-      "Регистрация пока не подключена. Скоро здесь можно будет зарегистрировать команду."
-    );
+  const form = event.currentTarget;
+
+  setMessage("");
+  setIsSuccess(false);
+  setIsLoading(true);
+
+    const formData = new FormData(event.currentTarget);
+
+    const teamName = String(formData.get("teamName") ?? "").trim();
+    const email = String(formData.get("email") ?? "").trim();
+    const password = String(formData.get("password") ?? "");
+
+    const supabase = createClient();
+
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            team_name: teamName,
+          },
+        },
+      });
+
+      if (error) {
+        if (error.message.toLowerCase().includes("duplicate")) {
+          throw new Error("Команда с таким названием уже существует.");
+        }
+
+        throw error;
+      }
+
+      setIsSuccess(true);
+
+      if (data.session) {
+        setMessage(
+          "Команда успешно зарегистрирована! Теперь можно перейти к следующему этапу."
+        );
+      } else {
+        setMessage(
+          "Заявка на регистрацию отправлена. Проверьте электронную почту и подтвердите адрес."
+        );
+      }
+
+      form.reset();
+    } catch (error) {
+      console.error("Registration error:", error);
+
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Не удалось зарегистрировать команду. Попробуйте ещё раз."
+      );
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -226,26 +282,44 @@ export default function RegisterPage() {
                 </div>
 
                 {/* Сообщение */}
-                {message && (
-                  <div
-                    role="status"
-                    className="rounded-xl border border-[#55A4FE]/20 bg-[#55A4FE]/10 p-3 text-xs leading-relaxed text-[#ABD2FB]"
-                  >
-                    {message}
-                  </div>
-                )}
+                
+{message && (
+  <div
+    role={isSuccess ? "status" : "alert"}
+    className={`rounded-xl border p-3 text-xs leading-relaxed ${
+      isSuccess
+        ? "border-green-400/20 bg-green-400/10 text-green-200"
+        : "border-red-400/20 bg-red-400/10 text-red-200"
+    }`}
+  >
+    {message}
+  </div>
+)}
 
                 {/* Кнопка */}
-                <button
-                  type="submit"
-                  className="group flex w-full items-center justify-center gap-3 rounded-xl bg-[#55A4FE] px-6 py-3.5 font-bold text-[#000C3A] shadow-lg shadow-blue-500/20 transition-all hover:-translate-y-0.5 hover:bg-[#78B7FF]"
-                >
-                  Зарегистрировать команду
+                
+<button
+  type="submit"
+  disabled={isLoading}
+  className="group flex w-full items-center justify-center gap-3 rounded-xl bg-[#55A4FE] px-6 py-3.5 font-bold text-[#000C3A] shadow-lg shadow-blue-500/20 transition-all hover:-translate-y-0.5 hover:bg-[#78B7FF] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
+>
+  {isLoading ? "Регистрируем команду..." : "Зарегистрировать команду"}
 
-                  <span className="transition-transform group-hover:translate-x-1">
-                    →
-                  </span>
-                </button>
+  {!isLoading && (
+    <span className="transition-transform group-hover:translate-x-1">
+      →
+    </span>
+  )}
+</button>
+<p className="mt-6 text-center text-sm text-white/60">
+  Уже есть аккаунт?{" "}
+  <Link
+    href="/login"
+    className="font-semibold text-[#55A4FE] transition-colors hover:text-[#78B7FF]"
+  >
+    Войти
+  </Link>
+</p>
               </form>
             </div>
           </section>
