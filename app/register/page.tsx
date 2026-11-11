@@ -1,9 +1,12 @@
+
 "use client";
 
 import { useState } from "react";
 import type { FormEvent } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import Header from "@/components/layout/Header";
+import Footer from "@/components/layout/Footer";
 
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -11,16 +14,16 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
-async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-  event.preventDefault();
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
 
-  const form = event.currentTarget;
+    const form = event.currentTarget;
 
-  setMessage("");
-  setIsSuccess(false);
-  setIsLoading(true);
+    setMessage("");
+    setIsSuccess(false);
+    setIsLoading(true);
 
-    const formData = new FormData(event.currentTarget);
+    const formData = new FormData(form);
 
     const teamName = String(formData.get("teamName") ?? "").trim();
     const email = String(formData.get("email") ?? "").trim();
@@ -47,17 +50,16 @@ async function handleSubmit(event: FormEvent<HTMLFormElement>) {
         throw error;
       }
 
-      setIsSuccess(true);
-
-      if (data.session) {
-        setMessage(
-          "Команда успешно зарегистрирована! Теперь можно перейти к следующему этапу."
-        );
-      } else {
-        setMessage(
-          "Заявка на регистрацию отправлена. Проверьте электронную почту и подтвердите адрес."
+      if (!data.session) {
+        throw new Error(
+          "Не удалось создать активную сессию. Попробуйте ещё раз."
         );
       }
+
+      setIsSuccess(true);
+      setMessage(
+        "Команда успешно зарегистрирована! Теперь можно перейти к следующему этапу."
+      );
 
       form.reset();
     } catch (error) {
@@ -75,84 +77,49 @@ async function handleSubmit(event: FormEvent<HTMLFormElement>) {
 
   return (
     <>
-      {/* Шапка — в стиле главной страницы */}
-      <header className="relative z-30 border-b border-white/10 bg-[#000C3A] text-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          <Link
-            href="/"
-            className="text-2xl font-black tracking-tight"
-          >
-            Chipa<span className="text-[#55A4FE]">Game</span>
-          </Link>
-
-          <nav className="hidden items-center gap-10 text-sm font-medium text-white/75 md:flex">
-            <Link
-              href="/#about"
-              className="transition-colors hover:text-[#55A4FE]"
-            >
-              Об игре
-            </Link>
-
-            <Link
-              href="/#rating"
-              className="transition-colors hover:text-[#55A4FE]"
-            >
-              Рейтинг
-            </Link>
-          </nav>
-
-          <Link
-            href="/"
-            className="rounded-xl border border-white/15 px-5 py-2.5 text-sm font-semibold text-white/85 transition-all hover:border-[#55A4FE]/50 hover:bg-white/5 hover:text-white"
-          >
-            На главную
-          </Link>
-        </div>
-      </header>
+      <Header actionLabel="Войти" actionHref="/login" />
 
       {/* Основная область */}
-      <main className="relative isolate flex min-h-[calc(100svh-73px)] items-center overflow-hidden bg-[#000C3A] px-6 py-8 text-white">
+      <main className="relative isolate flex min-h-[calc(100svh-76px)] items-center overflow-x-clip bg-[#000C3A] px-6 py-12 text-white">
 
         {/* Атмосферные вспышки */}
-        
-<div
-  aria-hidden="true"
-  className="pointer-events-none absolute inset-0 z-0 overflow-hidden"
->
-  {/* Левая вспышка */}
-  <div
-    className="storm-glow absolute -left-32 top-[5%] h-[430px] w-[520px] rounded-[42%_58%_63%_37%] blur-[65px]"
-    style={{
-      background:
-        "radial-gradient(ellipse, rgba(0,132,255,0.75), rgba(85,164,254,0.35) 45%, transparent 72%)",
-      animation: "storm-glow 13s ease-in-out -4s infinite",
-    }}
-  />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 z-0 overflow-hidden"
+        >
+          {/* Левая вспышка */}
+          <div
+            className="storm-glow absolute -left-32 top-[5%] h-[430px] w-[520px] rounded-[42%_58%_63%_37%] blur-[65px]"
+            style={{
+              background:
+                "radial-gradient(ellipse, rgba(0,132,255,0.75), rgba(85,164,254,0.35) 45%, transparent 72%)",
+              animation: "storm-glow 13s ease-in-out -4s infinite",
+            }}
+          />
 
-  {/* Правая вспышка */}
-  <div
-    className="storm-glow absolute -right-32 top-[20%] h-[500px] w-[550px] rounded-[63%_37%_42%_58%] blur-[75px]"
-    style={{
-      background:
-        "radial-gradient(ellipse, rgba(85,164,254,0.70), rgba(0,132,255,0.30) 48%, transparent 72%)",
-      animation: "storm-glow 17s ease-in-out -9s infinite",
-    }}
-  />
+          {/* Правая вспышка */}
+          <div
+            className="storm-glow absolute -right-32 top-[20%] h-[500px] w-[550px] rounded-[63%_37%_42%_58%] blur-[75px]"
+            style={{
+              background:
+                "radial-gradient(ellipse, rgba(85,164,254,0.70), rgba(0,132,255,0.30) 48%, transparent 72%)",
+              animation: "storm-glow 17s ease-in-out -9s infinite",
+            }}
+          />
 
-  {/* Нижняя вспышка */}
-  <div
-    className="storm-glow absolute -bottom-64 left-[25%] h-[450px] w-[600px] rounded-[47%_53%_35%_65%] blur-[85px]"
-    style={{
-      background:
-        "radial-gradient(ellipse, rgba(0,100,255,0.65), rgba(85,164,254,0.28) 50%, transparent 72%)",
-      animation: "storm-glow 21s ease-in-out -13s infinite",
-    }}
-  />
+          {/* Нижняя вспышка */}
+          <div
+            className="storm-glow absolute -bottom-64 left-[25%] h-[450px] w-[600px] rounded-[47%_53%_35%_65%] blur-[85px]"
+            style={{
+              background:
+                "radial-gradient(ellipse, rgba(0,100,255,0.65), rgba(85,164,254,0.28) 50%, transparent 72%)",
+              animation: "storm-glow 21s ease-in-out -13s infinite",
+            }}
+          />
 
-  {/* Затемнение для сохранения контраста */}
-  <div className="absolute inset-0 bg-gradient-to-b from-[#000C3A]/15 via-transparent to-[#030822]/40" />
-</div>
-
+          {/* Затемнение для сохранения контраста */}
+          <div className="absolute inset-0 bg-gradient-to-b from-[#000C3A]/15 via-transparent to-[#030822]/40" />
+        </div>
 
         {/* Контент */}
         <div className="relative z-10 mx-auto grid w-full max-w-6xl grid-cols-2 items-center gap-16 max-md:grid-cols-1 max-md:gap-8">
@@ -282,49 +249,52 @@ async function handleSubmit(event: FormEvent<HTMLFormElement>) {
                 </div>
 
                 {/* Сообщение */}
-                
-{message && (
-  <div
-    role={isSuccess ? "status" : "alert"}
-    className={`rounded-xl border p-3 text-xs leading-relaxed ${
-      isSuccess
-        ? "border-green-400/20 bg-green-400/10 text-green-200"
-        : "border-red-400/20 bg-red-400/10 text-red-200"
-    }`}
-  >
-    {message}
-  </div>
-)}
+                {message && (
+                  <div
+                    role={isSuccess ? "status" : "alert"}
+                    className={`rounded-xl border p-3 text-xs leading-relaxed ${
+                      isSuccess
+                        ? "border-green-400/20 bg-green-400/10 text-green-200"
+                        : "border-red-400/20 bg-red-400/10 text-red-200"
+                    }`}
+                  >
+                    {message}
+                  </div>
+                )}
 
                 {/* Кнопка */}
-                
-<button
-  type="submit"
-  disabled={isLoading}
-  className="group flex w-full items-center justify-center gap-3 rounded-xl bg-[#55A4FE] px-6 py-3.5 font-bold text-[#000C3A] shadow-lg shadow-blue-500/20 transition-all hover:-translate-y-0.5 hover:bg-[#78B7FF] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
->
-  {isLoading ? "Регистрируем команду..." : "Зарегистрировать команду"}
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="group flex w-full items-center justify-center gap-3 rounded-xl bg-[#55A4FE] px-6 py-3.5 font-bold text-[#000C3A] shadow-lg shadow-blue-500/20 transition-all hover:-translate-y-0.5 hover:bg-[#78B7FF] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
+                >
+                  {isLoading
+                    ? "Регистрируем команду..."
+                    : "Зарегистрировать команду"}
 
-  {!isLoading && (
-    <span className="transition-transform group-hover:translate-x-1">
-      →
-    </span>
-  )}
-</button>
-<p className="mt-6 text-center text-sm text-white/60">
-  Уже есть аккаунт?{" "}
-  <Link
-    href="/login"
-    className="font-semibold text-[#55A4FE] transition-colors hover:text-[#78B7FF]"
-  >
-    Войти
-  </Link>
-</p>
+                  {!isLoading && (
+                    <span className="transition-transform group-hover:translate-x-1">
+                      →
+                    </span>
+                  )}
+                </button>
+
+                <p className="mt-6 text-center text-sm text-white/60">
+                  Уже есть аккаунт?{" "}
+                  <Link
+                    href="/login"
+                    className="font-semibold text-[#55A4FE] transition-colors hover:text-[#78B7FF]"
+                  >
+                    Войти
+                  </Link>
+                </p>
               </form>
             </div>
           </section>
         </div>
       </main>
+
+      <Footer />
     </>
   );
 }

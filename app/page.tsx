@@ -1,6 +1,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import Header from "@/components/layout/Header";
+import Footer from "@/components/layout/Footer";
 
 const particles = [
   { x: "8%", y: "18%", size: 3, duration: "9s", delay: "-2s" },
@@ -44,36 +46,7 @@ const features = [
 export default function HomePage() {
   return (
     <>
-      {/* Шапка */}
-      <header className="relative z-30 border-b border-white/10 bg-[#000C3A] text-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
-          <Link href="/" className="text-2xl font-black tracking-tight">
-            Chipa<span className="text-[#55A4FE]">Game</span>
-          </Link>
-
-          <nav className="hidden items-center gap-10 text-sm font-medium text-white/75 md:flex">
-            <a
-              href="#about"
-              className="transition-colors hover:text-[#55A4FE]"
-            >
-              Об игре
-            </a>
-            <a
-              href="#rating"
-              className="transition-colors hover:text-[#55A4FE]"
-            >
-              Рейтинг
-            </a>
-          </nav>
-
-          <Link
-            href="/register"
-            className="rounded-xl bg-[#55A4FE] px-6 py-3 text-sm font-bold text-[#000C3A] shadow-lg shadow-blue-500/20 transition-all hover:-translate-y-0.5 hover:bg-[#78B7FF]"
-          >
-            Регистрация
-          </Link>
-        </div>
-      </header>
+      <Header />
 
       <main className="overflow-hidden">
         {/* Главный экран */}
@@ -266,6 +239,8 @@ export default function HomePage() {
           </div>
         </section>
       </main>
+
+      <Footer />
     </>
   );
 }
