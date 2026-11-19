@@ -1,17 +1,175 @@
 
 "use client";
 
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import { createClient } from "@/lib/supabase/client";
 
-const demoTeams = [
-  { id: 1, name: "Команда 1", status: "В лобби" },
-  { id: 2, name: "Команда 2", status: "В лобби" },
-  { id: 3, name: "Команда 3", status: "В лобби" },
-  { id: 4, name: "Команда 4", status: "В лобби" },
-];
+interface Team {
+  id: string;
+  name: string;
+  created_at: string;
+}
+
+interface GameState {
+  id: number;
+  status: "waiting" | "starting";
+  launch_at: string | null;
+}
 
 export default function LobbyPage() {
+  const router = useRouter();
+
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const [gameStatus, setGameStatus] = useState<"waiting" | "starting">(
+    "waiting"
+  );
+  const [launchAt, setLaunchAt] = useState<string | null>(null);
+  const [countdown, setCountdown] = useState<number | null>(null);
+  const [isFading, setIsFading] = useState(false);
+
+  // Загрузка команд и подключение Realtime
+  useEffect(() => {
+    const supabase = createClient();
+    let active = true;
+
+    async function loadTeams() {
+      const { data, error } = await supabase
+        .from("teams")
+        .select("id, name, created_at")
+        .order("created_at", { ascending: true });
+
+      if (!active) return;
+
+      if (error) {
+        console.error("Teams loading error:", error);
+        setError("Не удалось загрузить список команд.");
+        setIsLoading(false);
+        return;
+      }
+
+      setTeams(data ?? []);
+      setError(null);
+      setIsLoading(false);
+    }
+
+    async function loadGameState() {
+      const { data, error } = await supabase
+        .from("game_state")
+        .select("id, status, launch_at")
+        .eq("id", 1)
+        .single();
+
+      if (!active) return;
+
+      if (error) {
+        console.error("Game state loading error:", error);
+        return;
+      }
+
+      setGameStatus(data.status);
+      setLaunchAt(data.launch_at);
+    }
+
+    void loadTeams();
+    void loadGameState();
+
+    const channel = supabase
+      .channel("lobby-realtime")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "teams",
+        },
+        () => {
+          void loadTeams();
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "game_state",
+          filter: "id=eq.1",
+        },
+        (payload) => {
+          if (!active) return;
+
+          const newState = payload.new as GameState;
+
+          setGameStatus(newState.status);
+          setLaunchAt(newState.launch_at);
+        }
+      )
+      .subscribe((status) => {
+        if (status === "CHANNEL_ERROR") {
+          console.error("Lobby Realtime connection error");
+        }
+      });
+
+    return () => {
+      active = false;
+      void supabase.removeChannel(channel);
+    };
+  }, []);
+
+  // Синхронизированный отсчёт и переход на страницу промо
+  useEffect(() => {
+    if (gameStatus !== "starting" || !launchAt) {
+      setCountdown(null);
+      return;
+    }
+
+    const launchTime = new Date(launchAt).getTime();
+
+    if (Number.isNaN(launchTime)) {
+      console.error("Invalid launch_at value:", launchAt);
+      return;
+    }
+
+    let redirectTimeout: ReturnType<typeof setTimeout> | null = null;
+
+    function updateCountdown() {
+      const remaining = Math.max(
+        0,
+        Math.ceil((launchTime - Date.now()) / 1000)
+      );
+
+      setCountdown(remaining);
+
+      if (remaining <= 0) {
+        setIsFading(true);
+
+        if (redirectTimeout === null) {
+          redirectTimeout = setTimeout(() => {
+            router.replace("/promo");
+          }, 700);
+        }
+      }
+    }
+
+    updateCountdown();
+
+    const interval = setInterval(updateCountdown, 100);
+
+    return () => {
+      clearInterval(interval);
+
+      if (redirectTimeout !== null) {
+        clearTimeout(redirectTimeout);
+      }
+    };
+  }, [gameStatus, launchAt, router]);
+
   return (
     <>
       <Header />
@@ -86,22 +244,27 @@ export default function LobbyPage() {
               </div>
 
               <span className="mb-4 rounded-full border border-[#55A4FE]/25 bg-[#55A4FE]/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-[#ABD2FB]">
-                Ожидание участников
+                {gameStatus === "starting"
+                  ? "Игра запускается"
+                  : "Ожидание участников"}
               </span>
 
               <h2 className="text-2xl font-black sm:text-3xl">
-                Скоро всё начнётся
+                {gameStatus === "starting"
+                  ? "Приготовьтесь!"
+                  : "Скоро всё начнётся"}
               </h2>
 
               <p className="mt-3 max-w-lg text-sm leading-relaxed text-white/50 sm:text-base">
-                Дождитесь, пока организаторы соберут все команды и объявят
-                начало игры. Не закрывайте страницу.
+                {gameStatus === "starting"
+                  ? "Организаторы начали игру. Совсем скоро вы перейдёте к следующему этапу."
+                  : "Дождитесь, пока организаторы соберут все команды и объявят начало игры. Не закрывайте страницу."}
               </p>
 
               <div className="mt-8 flex flex-wrap items-center justify-center gap-8">
                 <div>
                   <div className="text-3xl font-black text-white">
-                    {demoTeams.length}
+                    {isLoading ? "—" : teams.length}
                   </div>
                   <div className="mt-1 text-xs font-medium text-white/40">
                     Команд в лобби
@@ -112,10 +275,19 @@ export default function LobbyPage() {
 
                 <div>
                   <div className="flex items-center justify-center gap-2">
-                    <span className="h-2 w-2 animate-pulse rounded-full bg-[#39E875] shadow-[0_0_10px_#39E875]" />
-                    <span className="text-sm font-bold text-[#39E875]">
-                      Ожидание
-                    </span>
+                    {gameStatus === "starting" ? (
+                      <span className="text-sm font-bold text-[#FFE15A]">
+                        Запускается
+                        {countdown !== null ? `: ${countdown}` : "..."}
+                      </span>
+                    ) : (
+                      <>
+                        <span className="h-2 w-2 animate-pulse rounded-full bg-[#39E875] shadow-[0_0_10px_#39E875]" />
+                        <span className="text-sm font-bold text-[#39E875]">
+                          Ожидание
+                        </span>
+                      </>
+                    )}
                   </div>
                   <div className="mt-1 text-xs font-medium text-white/40">
                     Статус игры
@@ -129,9 +301,7 @@ export default function LobbyPage() {
           <section className="overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.04] shadow-2xl shadow-black/10 backdrop-blur-xl">
             <div className="flex flex-col justify-between gap-3 border-b border-white/10 px-6 py-6 sm:flex-row sm:items-center sm:px-8">
               <div>
-                <h2 className="text-xl font-bold">
-                  Участники лобби
-                </h2>
+                <h2 className="text-xl font-bold">Участники лобби</h2>
                 <p className="mt-1 text-sm text-white/40">
                   Команды, зарегистрированные для участия
                 </p>
@@ -144,34 +314,48 @@ export default function LobbyPage() {
             </div>
 
             <div className="divide-y divide-white/[0.06]">
-              {demoTeams.map((team, index) => (
-                <div
-                  key={team.id}
-                  className="flex items-center justify-between gap-4 px-6 py-5 transition-colors hover:bg-white/[0.03] sm:px-8"
-                >
-                  <div className="flex min-w-0 items-center gap-4">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#55A4FE]/15 bg-[#55A4FE]/10 text-sm font-black text-[#55A4FE]">
-                      {String(index + 1).padStart(2, "0")}
-                    </div>
-
-                    <div className="min-w-0">
-                      <h3 className="truncate text-sm font-bold text-white sm:text-base">
-                        {team.name}
-                      </h3>
-                      <p className="mt-1 text-xs text-white/35">
-                        Участник игры
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex shrink-0 items-center gap-2 rounded-full border border-[#39E875]/15 bg-[#39E875]/[0.06] px-3 py-1.5">
-                    <span className="h-1.5 w-1.5 rounded-full bg-[#39E875] shadow-[0_0_7px_#39E875]" />
-                    <span className="text-xs font-semibold text-[#39E875]">
-                      {team.status}
-                    </span>
-                  </div>
+              {isLoading ? (
+                <div className="px-6 py-12 text-center text-sm text-white/40 sm:px-8">
+                  Загружаем список команд...
                 </div>
-              ))}
+              ) : error ? (
+                <div className="px-6 py-12 text-center text-sm text-red-400 sm:px-8">
+                  {error}
+                </div>
+              ) : teams.length === 0 ? (
+                <div className="px-6 py-12 text-center text-sm text-white/40 sm:px-8">
+                  Пока нет зарегистрированных команд.
+                </div>
+              ) : (
+                teams.map((team, index) => (
+                  <div
+                    key={team.id}
+                    className="flex items-center justify-between gap-4 px-6 py-5 transition-colors hover:bg-white/[0.03] sm:px-8"
+                  >
+                    <div className="flex min-w-0 items-center gap-4">
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#55A4FE]/15 bg-[#55A4FE]/10 text-sm font-black text-[#55A4FE]">
+                        {String(index + 1).padStart(2, "0")}
+                      </div>
+
+                      <div className="min-w-0">
+                        <h3 className="truncate text-sm font-bold text-white sm:text-base">
+                          {team.name}
+                        </h3>
+                        <p className="mt-1 text-xs text-white/35">
+                          Участник игры
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex shrink-0 items-center gap-2 rounded-full border border-[#39E875]/15 bg-[#39E875]/[0.06] px-3 py-1.5">
+                      <span className="h-1.5 w-1.5 rounded-full bg-[#39E875] shadow-[0_0_7px_#39E875]" />
+                      <span className="text-xs font-semibold text-[#39E875]">
+                        В лобби
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
 
             <div className="border-t border-white/10 px-6 py-4 text-center sm:px-8">
@@ -182,7 +366,15 @@ export default function LobbyPage() {
           </section>
         </div>
       </main>
+
       <Footer />
+
+      {/* Затемнение перед переходом */}
+      <div
+        className={`pointer-events-none fixed inset-0 z-[100] bg-black transition-opacity duration-700 ${
+          isFading ? "opacity-100" : "opacity-0"
+        }`}
+      />
     </>
   );
 }

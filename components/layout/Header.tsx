@@ -16,6 +16,7 @@ export default function Header({
 }: HeaderProps) {
   const [teamName, setTeamName] = useState<string | null>(null);
   const [isChecking, setIsChecking] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
@@ -25,21 +26,40 @@ export default function Header({
     async function loadTeam(userId: string) {
       const currentRequest = ++requestId;
 
-      const { data, error } = await supabase
-        .from("teams")
-        .select("name")
-        .eq("id", userId)
-        .maybeSingle();
+      const [teamResult, profileResult] = await Promise.all([
+        supabase
+          .from("teams")
+          .select("name")
+          .eq("id", userId)
+          .maybeSingle(),
+
+        supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", userId)
+          .maybeSingle(),
+      ]);
 
       if (!active || currentRequest !== requestId) return;
 
-      if (error) {
-        console.error("Team loading error:", error);
+      const admin = profileResult.data?.role === "admin";
+
+      if (profileResult.error) {
+        console.error("Profile loading error:", profileResult.error);
+      }
+
+      setIsAdmin(admin);
+
+      if (teamResult.error) {
+        console.error("Team loading error:", teamResult.error);
         setTeamName(null);
-      } else if (data) {
-        setTeamName(data.name);
+      } else if (teamResult.data) {
+        setTeamName(teamResult.data.name);
       } else {
-        console.error("Team not found for user:", userId);
+        if (!admin) {
+          console.error("Team not found for user:", userId);
+        }
+
         setTeamName(null);
       }
 
@@ -49,10 +69,12 @@ export default function Header({
     async function checkSession() {
       const { data, error } = await supabase.auth.getSession();
 
+
       if (!active) return;
 
       if (error || !data.session) {
         setTeamName(null);
+        setIsAdmin(false);
         setIsChecking(false);
         return;
       }
@@ -66,6 +88,7 @@ export default function Header({
       if (event === "SIGNED_OUT" || !session) {
         requestId++;
         setTeamName(null);
+        setIsAdmin(false);
         setIsChecking(false);
         return;
       }
@@ -93,7 +116,6 @@ export default function Header({
   return (
     <header className="sticky top-0 z-50 w-full border-b border-[#55A4FE]/30 bg-[#030822] text-white shadow-[0_4px_20px_rgba(0,12,58,0.25)]">
       <div className="mx-auto flex min-h-[76px] max-w-7xl items-center justify-between gap-6 px-5 sm:px-8">
-        {/* Логотип */}
         <Link
           href="/"
           className="shrink-0 text-2xl font-black tracking-tight transition-opacity hover:opacity-75"
@@ -101,7 +123,6 @@ export default function Header({
           Chipa<span className="text-[#55A4FE]">Game</span>
         </Link>
 
-        {/* Навигация для компьютеров */}
         <nav className="hidden items-center gap-10 md:flex">
           <Link
             href="/#about"
@@ -116,17 +137,26 @@ export default function Header({
           >
             Рейтинг
           </Link>
+
           {!isChecking && teamName && (
-  <Link
-    href="/lobby"
-    className="text-sm font-semibold text-white/75 transition-colors hover:text-[#55A4FE]"
-  >
-    Лобби
-  </Link>
-)}
+            <Link
+              href="/lobby"
+              className="text-sm font-semibold text-white/75 transition-colors hover:text-[#55A4FE]"
+            >
+              Лобби
+            </Link>
+          )}
+
+          {!isChecking && isAdmin && (
+            <Link
+              href="/admin"
+              className="text-sm font-semibold text-white/75 transition-colors hover:text-[#55A4FE]"
+            >
+              Админ-панель
+            </Link>
+          )}
         </nav>
 
-        {/* Информация о команде или кнопка регистрации */}
         <div className="flex items-center gap-3">
           {!isChecking && teamName ? (
             <div className="flex max-w-[220px] items-center gap-3 sm:max-w-none">
@@ -140,6 +170,10 @@ export default function Header({
                 {teamName}
               </span>
             </div>
+          ) : !isChecking && isAdmin ? (
+            <span className="hidden text-sm font-bold text-[#55A4FE] sm:inline">
+              Администратор
+            </span>
           ) : (
             !isChecking && (
               <Link
@@ -152,7 +186,6 @@ export default function Header({
             )
           )}
 
-          {/* Мобильное меню */}
           <details className="relative md:hidden">
             <summary className="flex h-11 w-11 cursor-pointer list-none items-center justify-center rounded-xl border border-white/15 bg-white/5 text-white transition-colors hover:bg-white/10">
               <svg
@@ -186,7 +219,25 @@ export default function Header({
                   Рейтинг
                 </Link>
 
-                {!isChecking && !teamName && (
+                {!isChecking && teamName && (
+                  <Link
+                    href="/lobby"
+                    className="rounded-xl px-4 py-3 text-sm font-semibold text-[#FFE15A] transition-colors hover:bg-white/5"
+                  >
+                    Игровое лобби
+                  </Link>
+                )}
+
+                {!isChecking && isAdmin && (
+                  <Link
+                    href="/admin"
+                    className="rounded-xl px-4 py-3 text-sm font-semibold text-white/80 transition-colors hover:bg-white/5 hover:text-[#55A4FE]"
+                  >
+                    Админ-панель
+                  </Link>
+                )}
+
+                {!isChecking && !teamName && !isAdmin && (
                   <>
                     <div className="my-2 h-px bg-white/10" />
 
