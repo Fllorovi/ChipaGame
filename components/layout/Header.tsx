@@ -1,8 +1,9 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 interface HeaderProps {
@@ -14,9 +15,14 @@ export default function Header({
   actionLabel = "Стать участником",
   actionHref = "/register",
 }: HeaderProps) {
+  const router = useRouter();
+  const profileMenuRef = useRef<HTMLDivElement>(null);
+
   const [teamName, setTeamName] = useState<string | null>(null);
   const [isChecking, setIsChecking] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
@@ -69,7 +75,6 @@ export default function Header({
     async function checkSession() {
       const { data, error } = await supabase.auth.getSession();
 
-
       if (!active) return;
 
       if (error || !data.session) {
@@ -90,6 +95,7 @@ export default function Header({
         setTeamName(null);
         setIsAdmin(false);
         setIsChecking(false);
+        setIsProfileMenuOpen(false);
         return;
       }
 
@@ -112,6 +118,53 @@ export default function Header({
       subscription.unsubscribe();
     };
   }, []);
+
+  // Закрытие меню при клике вне него или нажатии Escape
+  useEffect(() => {
+    function handleOutsideClick(event: MouseEvent) {
+      if (
+        profileMenuRef.current &&
+        !profileMenuRef.current.contains(event.target as Node)
+      ) {
+        setIsProfileMenuOpen(false);
+      }
+    }
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setIsProfileMenuOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, []);
+
+  async function handleLogout() {
+    if (isLoggingOut) return;
+
+    setIsLoggingOut(true);
+
+    const supabase = createClient();
+    const { error } = await supabase.auth.signOut();
+
+    if (error) {
+      console.error("Logout error:", error);
+      setIsLoggingOut(false);
+      return;
+    }
+
+    setIsProfileMenuOpen(false);
+    router.replace("/login");
+    router.refresh();
+  }
+
+  const profileLabel = teamName || (isAdmin ? "Администратор" : "");
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-[#55A4FE]/30 bg-[#030822] text-white shadow-[0_4px_20px_rgba(0,12,58,0.25)]">
@@ -158,22 +211,58 @@ export default function Header({
         </nav>
 
         <div className="flex items-center gap-3">
-          {!isChecking && teamName ? (
-            <div className="flex max-w-[220px] items-center gap-3 sm:max-w-none">
-              <span
-                className="h-2.5 w-2.5 shrink-0 rounded-full bg-[#39E875] shadow-[0_0_7px_#39E875,0_0_16px_rgba(57,232,117,0.65)]"
-                aria-label="В сети"
-                title="В сети"
-              />
+          {!isChecking && profileLabel ? (
+            <div ref={profileMenuRef} className="relative">
+              <button
+                type="button"
+                onClick={() => setIsProfileMenuOpen((prev) => !prev)}
+                aria-expanded={isProfileMenuOpen}
+                aria-haspopup="true"
+                className="flex max-w-[220px] items-center gap-3 rounded-lg py-2 text-left transition-opacity hover:opacity-80 sm:max-w-none"
+              >
+                <span
+                  className="h-2.5 w-2.5 shrink-0 rounded-full bg-[#39E875] shadow-[0_0_7px_#39E875,0_0_16px_rgba(57,232,117,0.65)]"
+                  aria-label="В сети"
+                  title="В сети"
+                />
 
-              <span className="truncate text-sm font-bold text-[#FFE15A] [text-shadow:0_0_7px_rgba(255,225,90,0.65),0_0_16px_rgba(255,225,90,0.3)] sm:text-base">
-                {teamName}
-              </span>
+                <span
+                  className={`truncate text-sm font-bold sm:text-base ${
+                    teamName
+                      ? "text-[#FFE15A] [text-shadow:0_0_7px_rgba(255,225,90,0.65),0_0_16px_rgba(255,225,90,0.3)]"
+                      : "text-[#55A4FE]"
+                  }`}
+                >
+                  {profileLabel}
+                </span>
+
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  className={`h-4 w-4 shrink-0 text-white/50 transition-transform duration-200 ${
+                    isProfileMenuOpen ? "rotate-180" : ""
+                  }`}
+                >
+                  <path d="m6 9 6 6 6-6" />
+                </svg>
+              </button>
+
+              {isProfileMenuOpen && (
+                <div className="absolute right-0 top-[calc(100%+12px)] z-[60] w-48 overflow-hidden rounded-xl border border-[#55A4FE]/20 bg-[#07132F] p-2 shadow-2xl shadow-black/40">
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    disabled={isLoggingOut}
+                    className="w-full rounded-lg px-4 py-3 text-left text-sm font-semibold text-white/80 transition-colors hover:bg-[#55A4FE]/10 hover:text-[#55A4FE] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {isLoggingOut ? "Выход..." : "Выйти"}
+                  </button>
+                </div>
+              )}
             </div>
-          ) : !isChecking && isAdmin ? (
-            <span className="hidden text-sm font-bold text-[#55A4FE] sm:inline">
-              Администратор
-            </span>
           ) : (
             !isChecking && (
               <Link
