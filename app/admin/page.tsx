@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import Header from "@/components/layout/Header";
@@ -29,7 +30,6 @@ export default function AdminPage() {
   const [isChecking, setIsChecking] = useState(true);
   const [isLaunching, setIsLaunching] = useState(false);
   const [isTeamsExpanded, setIsTeamsExpanded] = useState(false);
-  const [skipPromo, setSkipPromo] = useState(false);
 
   const [error, setError] = useState("");
 
@@ -109,7 +109,6 @@ export default function AdminPage() {
         },
         (payload) => {
           if (!active || !payload.new) return;
-
           setGameState(payload.new as GameState);
         }
       )
@@ -128,7 +127,6 @@ export default function AdminPage() {
     setError("");
 
     const supabase = createClient();
-
     const launchAt = new Date(Date.now() + 3000).toISOString();
 
     const { data, error: launchError } = await supabase
@@ -161,7 +159,7 @@ export default function AdminPage() {
 
   if (isChecking) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#030822] text-white">
+      <main className="flex min-h-screen items-center justify-center bg-[#020619] text-white">
         Проверка доступа...
       </main>
     );
@@ -176,10 +174,8 @@ export default function AdminPage() {
       <main className="relative min-h-[calc(100svh-76px)] overflow-hidden bg-[#000456] px-5 py-8 text-white sm:px-8">
         {/* Фоновые свечения */}
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          {/* Голубая основа */}
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_45%,#123968_0%,#091E40_45%,#020619_100%)]" />
 
-          {/* Малиновые вспышки */}
           <div className="absolute -left-32 top-[10%] h-80 w-80 animate-pulse rounded-full bg-[#A51E50]/25 blur-[100px]" />
           <div className="absolute right-[-100px] top-[25%] h-96 w-96 animate-pulse rounded-full bg-[#C52B62]/30 blur-[110px] [animation-delay:500ms]" />
           <div className="absolute left-[35%] top-[60%] h-80 w-80 animate-pulse rounded-full bg-[#8F1748]/30 blur-[100px] [animation-delay:1000ms]" />
@@ -207,7 +203,7 @@ export default function AdminPage() {
             </p>
           </div>
 
-          {/* Дополнительная навигация */}
+          {/* Навигация */}
           <nav className="mb-7 flex flex-wrap items-center gap-2 border-b border-white/10 pb-4">
             <span className="rounded-lg bg-[#234C70] px-4 py-2 text-sm font-bold text-white shadow-md">
               Управление игрой
@@ -216,11 +212,17 @@ export default function AdminPage() {
             <span className="cursor-not-allowed rounded-lg border border-white/10 bg-white/[0.04] px-4 py-2 text-sm font-semibold text-white/30">
               Настройка туров · Скоро
             </span>
+
+            <Link
+              href="/admin/devtools"
+              className="rounded-lg border border-white/10 bg-white/[0.04] px-4 py-2 text-sm font-semibold text-white/60 transition-colors hover:border-[#55A4FE]/30 hover:bg-[#55A4FE]/10 hover:text-white"
+            >
+              DevTools
+            </Link>
           </nav>
 
-          {/* Основные блоки */}
-          <div className="grid items-start gap-6 lg:grid-cols-2">
-            {/* ИГРА */}
+          {/* Основной блок */}
+          <div className="mx-auto max-w-4xl">
             <section className="overflow-hidden rounded-3xl border border-[#55A4FE]/20 bg-[#0B1B4D]/80 shadow-[0_15px_50px_rgba(0,0,0,0.2)] backdrop-blur-xl">
               <div className="border-b border-white/10 px-6 py-5 sm:px-7">
                 <div className="flex items-center justify-between">
@@ -289,9 +291,7 @@ export default function AdminPage() {
                     className="flex w-full items-center justify-between px-5 py-4 text-left transition-colors hover:bg-[#55A4FE]/10"
                   >
                     <div>
-                      <p className="font-bold text-white">
-                        Список команд
-                      </p>
+                      <p className="font-bold text-white">Список команд</p>
 
                       <p className="mt-1 text-xs text-white/45">
                         Зарегистрировано: {teams.length}
@@ -366,126 +366,6 @@ export default function AdminPage() {
                     {isGameStarting
                       ? "Повторный запуск недоступен."
                       : "После запуска все участники получат уведомление."}
-                  </p>
-                </div>
-              </div>
-            </section>
-
-            {/* DEVTOOLS */}
-            <section className="overflow-hidden rounded-3xl border border-[#55A4FE]/20 bg-[#0B1B4D]/80 shadow-[0_15px_50px_rgba(0,0,0,0.2)] backdrop-blur-xl">
-              <div className="border-b border-white/10 px-6 py-5 sm:px-7">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-black uppercase tracking-[0.25em] text-[#55A4FE]">
-                      Advanced controls
-                    </p>
-
-                    <h2 className="mt-1 text-2xl font-black">DevTools</h2>
-                  </div>
-
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#55A4FE]/10 text-[#55A4FE]">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      className="h-6 w-6"
-                    >
-                      <path d="m14.7 6.3 3 3M4 20l5.5-1 9.2-9.2a2.1 2.1 0 0 0-3-3L6.5 16 4 20Z" />
-                      <path d="m13 8 3 3" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-6 p-6 sm:p-7">
-                {/* Пропуск туров */}
-                <div>
-                  <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-white/45">
-                    Управление турами
-                  </p>
-
-                  <div className="space-y-3">
-                    <button
-                      type="button"
-                      disabled
-                      className="flex w-full cursor-not-allowed items-center justify-between rounded-xl border border-[#55A4FE]/10 bg-[#10295A]/60 px-5 py-4 text-left opacity-50"
-                    >
-                      <div>
-                        <p className="font-bold text-white">
-                          Пропустить 1 тур
-                        </p>
-
-                        <p className="mt-1 text-xs text-white/40">
-                          Функция пока не реализована
-                        </p>
-                      </div>
-
-                      <span className="rounded-lg bg-[#55A4FE]/10 px-3 py-1 text-xs font-bold text-[#55A4FE]">
-                        Скоро
-                      </span>
-                    </button>
-
-                    <button
-                      type="button"
-                      disabled
-                      className="flex w-full cursor-not-allowed items-center justify-between rounded-xl border border-[#55A4FE]/10 bg-[#10295A]/60 px-5 py-4 text-left opacity-50"
-                    >
-                      <div>
-                        <p className="font-bold text-white">
-                          Пропустить 2 тур
-                        </p>
-
-                        <p className="mt-1 text-xs text-white/40">
-                          Функция пока не реализована
-                        </p>
-                      </div>
-
-                      <span className="rounded-lg bg-[#55A4FE]/10 px-3 py-1 text-xs font-bold text-[#55A4FE]">
-                        Скоро
-                      </span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Настройки запуска */}
-                <div className="border-t border-white/10 pt-6">
-                  <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-white/45">
-                    Настройки запуска
-                  </p>
-
-                  <div className="flex items-center justify-between gap-4 rounded-xl border border-[#55A4FE]/15 bg-[#10295A]/80 p-5">
-                    <div>
-                      <p className="font-bold text-white">
-                        Пропускать проморолик
-                      </p>
-
-                      <p className="mt-1 text-xs text-white/45">
-                        Не воспроизводить intro.mp4 при запуске
-                      </p>
-                    </div>
-
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={skipPromo}
-                      onClick={() => setSkipPromo((prev) => !prev)}
-                      className={`relative flex h-7 w-12 shrink-0 items-center rounded-full p-1 transition-colors duration-200 ${
-                        skipPromo ? "bg-[#0084FF]" : "bg-[#35506F]"
-                      }`}
-                    >
-                      <span
-                        className={`h-5 w-5 rounded-full bg-white shadow-md transition-transform duration-200 ${
-                          skipPromo ? "translate-x-5" : "translate-x-0"
-                        }`}
-                      />
-                    </button>
-                  </div>
-
-                  <p className="mt-3 text-xs text-white/35">
-                    Настройка пока работает только визуально. Её сохранение и
-                    применение при запуске подключим отдельно.
                   </p>
                 </div>
               </div>

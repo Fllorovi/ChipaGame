@@ -2,9 +2,11 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 
 export default function PromoPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const router = useRouter();
 
   useEffect(() => {
     const video = videoRef.current;
@@ -16,6 +18,10 @@ export default function PromoPage() {
     });
   }, []);
 
+  const handleVideoEnd = () => {
+    router.replace("/round1");
+  };
+
   return (
     <main className="fixed inset-0 z-50 h-screen w-screen overflow-hidden bg-black">
       <video
@@ -25,9 +31,7 @@ export default function PromoPage() {
         autoPlay
         playsInline
         controls={false}
-        onEnded={() => {
-          // Здесь позже добавим переход к игровому процессу.
-        }}
+        onEnded={handleVideoEnd}
       />
     </main>
   );

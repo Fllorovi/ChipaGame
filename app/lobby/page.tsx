@@ -18,6 +18,7 @@ interface GameState {
   id: number;
   status: "waiting" | "starting";
   launch_at: string | null;
+  skip_promo: boolean;
 }
 
 export default function LobbyPage() {
@@ -30,6 +31,7 @@ export default function LobbyPage() {
   const [gameStatus, setGameStatus] = useState<"waiting" | "starting">(
     "waiting"
   );
+  const [skipPromo, setSkipPromo] = useState(false);
   const [launchAt, setLaunchAt] = useState<string | null>(null);
   const [countdown, setCountdown] = useState<number | null>(null);
   const [isFading, setIsFading] = useState(false);
@@ -62,7 +64,7 @@ export default function LobbyPage() {
     async function loadGameState() {
       const { data, error } = await supabase
         .from("game_state")
-        .select("id, status, launch_at")
+        .select("id, status, launch_at, skip_promo")
         .eq("id", 1)
         .single();
 
@@ -75,6 +77,7 @@ export default function LobbyPage() {
 
       setGameStatus(data.status);
       setLaunchAt(data.launch_at);
+      setSkipPromo(data.skip_promo);
     }
 
     void loadTeams();
@@ -106,8 +109,9 @@ export default function LobbyPage() {
 
           const newState = payload.new as GameState;
 
-          setGameStatus(newState.status);
-          setLaunchAt(newState.launch_at);
+setGameStatus(newState.status);
+setLaunchAt(newState.launch_at);
+setSkipPromo(newState.skip_promo);
         }
       )
       .subscribe((status) => {
@@ -151,8 +155,8 @@ export default function LobbyPage() {
 
         if (redirectTimeout === null) {
           redirectTimeout = setTimeout(() => {
-            router.replace("/promo");
-          }, 700);
+  router.replace(skipPromo ? "/round1" : "/promo");
+}, 700);
         }
       }
     }
@@ -168,7 +172,7 @@ export default function LobbyPage() {
         clearTimeout(redirectTimeout);
       }
     };
-  }, [gameStatus, launchAt, router]);
+  }, [gameStatus, launchAt, skipPromo, router]);
 
   return (
     <>
