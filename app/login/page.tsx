@@ -3,7 +3,6 @@
 
 import { useState } from "react";
 import type { FormEvent } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Header from "@/components/layout/Header";
@@ -226,16 +225,7 @@ export default function LoginPage() {
 
               </form>
 
-              {/* Переход к регистрации */}
-              <p className="mt-7 text-center text-sm text-white/50">
-                Ещё нет аккаунта?{" "}
-                <Link
-                  href="/register"
-                  className="font-semibold text-[#55A4FE] transition-colors hover:text-[#78B7FF]"
-                >
-                  Зарегистрировать команду
-                </Link>
-              </p>
+              
 
             </section>
           </div>

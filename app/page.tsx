@@ -95,7 +95,7 @@ export default function HomePage() {
                 Игра начинается
                 <br />
                 с вашей команды
-                
+
               </h1>
 
               <p className="mt-8 max-w-xl text-lg leading-relaxed text-blue-100/70 md:text-xl">
@@ -103,12 +103,13 @@ export default function HomePage() {
                 что именно вы достойны победы в ChipaGame.
               </p>
 
+
               <div className="mt-10 flex flex-wrap items-center gap-5">
                 <Link
-                  href="/register"
-                  className="group flex items-center gap-3 rounded-xl bg-[#55A4FE] px-8 py-4 font-bold text-[#000C3A] shadow-xl shadow-blue-500/20 transition-all hover:-translate-y-1 hover:bg-[#78B7FF]"
+                  href="/login"
+                  className="group flex w-64 items-center justify-center gap-3 rounded-xl bg-[#55A4FE] px-8 py-4 font-bold text-[#000C3A] shadow-xl shadow-blue-500/20 transition-all hover:-translate-y-1 hover:bg-[#78B7FF]"
                 >
-                  Стать участником
+                  Войти в аккаунт
                   <span className="transition-transform group-hover:translate-x-1">
                     →
                   </span>
@@ -116,11 +117,12 @@ export default function HomePage() {
 
                 <a
                   href="#about"
-                  className="rounded-xl border border-white/20 px-8 py-4 font-semibold text-white/80 transition-all hover:border-[#55A4FE]/60 hover:bg-white/5 hover:text-white"
+                  className="group flex w-64 items-center justify-center gap-3 rounded-xl border border-[#55A4FE] px-8 py-4 font-bold text-[#55A4FE] transition-all hover:-translate-y-1 hover:bg-[#55A4FE]/10"
                 >
                   Узнать об игре
                 </a>
               </div>
+
 
               <div className="mt-14 flex items-center gap-8 border-t border-white/10 pt-8">
                 <div>
