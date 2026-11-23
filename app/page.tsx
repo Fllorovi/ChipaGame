@@ -95,7 +95,7 @@ export default function HomePage() {
                 Игра начинается
                 <br />
                 с вашей команды
-                <span className="text-[#55A4FE]">.</span>
+                
               </h1>
 
               <p className="mt-8 max-w-xl text-lg leading-relaxed text-blue-100/70 md:text-xl">
