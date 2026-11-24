@@ -93,9 +93,9 @@ export default function RatingPage() {
 
     // Второе место слева, первое по центру, третье справа.
     const podiumTeams = [
-        rating.find((team) => team.place === 2),
-        rating.find((team) => team.place === 1),
-        rating.find((team) => team.place === 3),
+        rating.find((team) => team.place === 2 && team.correctAnswers > 0),
+        rating.find((team) => team.place === 1 && team.correctAnswers > 0),
+        rating.find((team) => team.place === 3 && team.correctAnswers > 0),
     ];
 
     return (
@@ -183,7 +183,7 @@ export default function RatingPage() {
 
                                     const style =
                                         leaderStyles[
-                                            team.place as keyof typeof leaderStyles
+                                        team.place as keyof typeof leaderStyles
                                         ];
 
                                     if (!style) {
@@ -201,8 +201,8 @@ export default function RatingPage() {
                                                 {team.place === 1
                                                     ? "★"
                                                     : team.place === 2
-                                                      ? "◆"
-                                                      : "✦"}
+                                                        ? "◆"
+                                                        : "✦"}
                                             </span>
 
                                             <p
@@ -298,7 +298,9 @@ export default function RatingPage() {
                                             {rating.map((team, index) => {
                                                 // До появления очков показываем обычную нумерацию.
                                                 const displayPlace = hasResults
-                                                    ? team.place
+                                                    ? team.correctAnswers === 0
+                                                        ? index + 1
+                                                        : team.place
                                                     : index + 1;
 
                                                 return (
@@ -309,15 +311,14 @@ export default function RatingPage() {
                                                         {/* Место */}
                                                         <div>
                                                             <span
-                                                                className={`flex h-10 w-10 items-center justify-center rounded-xl text-sm font-black ${
-                                                                    displayPlace === 1
+                                                                className={`flex h-10 w-10 items-center justify-center rounded-xl text-sm font-black ${displayPlace === 1
                                                                         ? "border border-[#55A4FE]/40 bg-[#55A4FE]/20 text-[#55A4FE]"
                                                                         : displayPlace === 2
-                                                                          ? "border border-white/20 bg-white/10 text-slate-200"
-                                                                          : displayPlace === 3
-                                                                            ? "border border-orange-300/30 bg-orange-400/10 text-orange-300"
-                                                                            : "bg-white/[0.06] text-blue-100/70"
-                                                                }`}
+                                                                            ? "border border-white/20 bg-white/10 text-slate-200"
+                                                                            : displayPlace === 3
+                                                                                ? "border border-orange-300/30 bg-orange-400/10 text-orange-300"
+                                                                                : "bg-white/[0.06] text-blue-100/70"
+                                                                    }`}
                                                             >
                                                                 {displayPlace}
                                                             </span>
