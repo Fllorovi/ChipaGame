@@ -185,7 +185,7 @@ export default function Header({
           </Link>
 
           <Link
-            href="/#rating"
+            href="/rating"
             className="text-sm font-semibold text-white/75 transition-colors hover:text-[#55A4FE]"
           >
             Рейтинг

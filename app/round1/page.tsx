@@ -234,7 +234,6 @@ export default function RoundOnePage() {
   const [failedZones, setFailedZones] = useState<number[]>([]);
 
   const [modalState, setModalState] = useState<"none" | "dialogue" | "task" | "result">("none");
-  // Фазы диалога: intro → reactions → post
   const [dialoguePhase, setDialoguePhase] = useState<"intro" | "reactions" | "post">("intro");
   const [dialogueIndex, setDialogueIndex] = useState(0);
 
@@ -242,6 +241,9 @@ export default function RoundOnePage() {
   const [answerStatus, setAnswerStatus] = useState<"idle" | "wrong" | "correct">("idle");
 
   const [waterLevel, setWaterLevel] = useState(50);
+    // затемнение неба и сила ветра зависят от уровня воды
+  const darkness = Math.min(1, Math.max(0, (waterLevel - 30) / 50));
+  const windStrength = Math.min(1, Math.max(0, (waterLevel - 52) / 28));
 
   const activeZone = selectedZone !== null ? zones[selectedZone] : null;
 
@@ -256,7 +258,6 @@ export default function RoundOnePage() {
 
   const handleNextDialogue = () => {
     if (!activeZone) return;
-
     const currentDialogues = getDialoguesForPhase();
 
     if (dialogueIndex < currentDialogues.length - 1) {
@@ -264,18 +265,14 @@ export default function RoundOnePage() {
       return;
     }
 
-    // Конец текущей фазы диалога
     if (dialoguePhase === "intro") {
-      // Сразу переходим к ЗАДАНИЮ (без брифинга)
       setModalState("task");
       setSelectedAnswer(null);
       setAnswerStatus("idle");
     } else if (dialoguePhase === "reactions") {
-      // Реакции закончились → результат (успех/провал)
       setDialoguePhase("post");
       setDialogueIndex(0);
     } else {
-      // post закончился → закрыть
       setModalState("none");
       setSelectedZone(null);
       setSelectedAnswer(null);
@@ -300,7 +297,6 @@ export default function RoundOnePage() {
 
   const handleCheckAnswer = () => {
     if (!selectedAnswer || !activeZone || selectedZone === null) return;
-
     const answerObj = activeZone.task.options.find((o) => o.id === selectedAnswer);
 
     if (answerObj?.correct) {
@@ -319,7 +315,6 @@ export default function RoundOnePage() {
     }
   };
 
-  // После ответа → идём в РЕАКЦИИ персонажей на выполненное задание
   const handleProceedAfterAnswer = () => {
     setDialoguePhase("reactions");
     setModalState("dialogue");
@@ -331,7 +326,6 @@ export default function RoundOnePage() {
   };
 
   const progressPercent = Math.round((completedZones.length / zones.length) * 100);
-
   const currentDialogues = getDialoguesForPhase();
 
   return (
@@ -351,69 +345,356 @@ export default function RoundOnePage() {
         </div>
       </div>
 
-      {/* ================= ВИДЖЕТ ОСТРОВА ================= */}
-      <div className="island-widget absolute bottom-8 right-8 z-40 flex flex-col items-center gap-2">
-        <div className="relative h-56 w-80 overflow-hidden rounded-2xl border-2 border-[#55A4FE]/40 shadow-[0_10px_40px_rgba(0,0,0,0.8)] bg-[#0a192f]">
-          <svg viewBox="0 0 400 250" className="absolute inset-0 w-full h-full" preserveAspectRatio="xMidYMax slice">
+            {/* ================= ВИДЖЕТ ОСТРОВА (уменьшён на 15%, остров увеличен, горы зелёные на острове, небо тёмное + ветер при провалах) ================= */}
+      <div className="island-widget absolute bottom-4 right-4 z-40 flex flex-col items-center gap-2">
+        <div className="relative h-[202px] w-[275px] overflow-hidden rounded-2xl border-2 border-[#55A4FE]/40 shadow-[0_10px_40px_rgba(0,0,0,0.8)] bg-[#0a1628]">
+          <svg viewBox="0 0 400 300" className="absolute inset-0 w-full h-full" preserveAspectRatio="xMidYMid slice">
             <defs>
+              {/* Небо — тёмное, сумеречное */}
               <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#0f2027" />
-                <stop offset="50%" stopColor="#203a43" />
-                <stop offset="100%" stopColor="#2c5364" />
+                <stop offset="0%" stopColor="#050a16" />
+                <stop offset="40%" stopColor="#0c1830" />
+                <stop offset="72%" stopColor="#183048" />
+                <stop offset="100%" stopColor="#2c4a60" />
               </linearGradient>
-              <linearGradient id="mountGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#4a5568" />
-                <stop offset="100%" stopColor="#2d3748" />
+
+              {/* Динамическое затемнение неба */}
+              <linearGradient id="darkSky" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#01040c" stopOpacity="0.95" />
+                <stop offset="70%" stopColor="#01040c" stopOpacity="0.5" />
+                <stop offset="100%" stopColor="#01040c" stopOpacity="0" />
               </linearGradient>
-              <linearGradient id="jungleGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#2f855a" />
-                <stop offset="100%" stopColor="#22543d" />
+
+              {/* Зелёные горы на острове — 3 слоя */}
+              <linearGradient id="mountFar" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#2c5138" />
+                <stop offset="100%" stopColor="#182f20" />
+              </linearGradient>
+              <linearGradient id="mountMid" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#35603f" />
+                <stop offset="100%" stopColor="#1f3c26" />
+              </linearGradient>
+              <linearGradient id="mountNear" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#3f6f45" />
+                <stop offset="100%" stopColor="#264a2e" />
+              </linearGradient>
+
+              <linearGradient id="rockGrad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="#6a7a6a" />
+                <stop offset="50%" stopColor="#4a5a4a" />
+                <stop offset="100%" stopColor="#2a3a2a" />
+              </linearGradient>
+              <linearGradient id="grassGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#5f9a3f" />
+                <stop offset="100%" stopColor="#2c5a2c" />
               </linearGradient>
               <linearGradient id="sandGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#f6e05e" />
-                <stop offset="100%" stopColor="#d69e2e" />
+                <stop offset="0%" stopColor="#c8b888" />
+                <stop offset="100%" stopColor="#987a5a" />
               </linearGradient>
+              <linearGradient id="ruinGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#8a8a7a" />
+                <stop offset="100%" stopColor="#5a5a4a" />
+              </linearGradient>
+              <linearGradient id="waterTopGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#2a6a8a" stopOpacity="0.7" />
+                <stop offset="100%" stopColor="#1a4a6a" stopOpacity="0.85" />
+              </linearGradient>
+              <linearGradient id="waterMidGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#1a4a6a" stopOpacity="0.8" />
+                <stop offset="100%" stopColor="#0a2a4a" stopOpacity="0.9" />
+              </linearGradient>
+              <linearGradient id="waterDeepGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#0a2a4a" stopOpacity="0.9" />
+                <stop offset="100%" stopColor="#051525" stopOpacity="0.98" />
+              </linearGradient>
+              <radialGradient id="underwaterGlow" cx="50%" cy="40%" r="50%">
+                <stop offset="0%" stopColor="#4ac8e8" stopOpacity="0.15" />
+                <stop offset="100%" stopColor="#0a2a4a" stopOpacity="0" />
+              </radialGradient>
+              <radialGradient id="runeGlow" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stopColor="#55a4fe" stopOpacity="0.8" />
+                <stop offset="100%" stopColor="#55a4fe" stopOpacity="0" />
+              </radialGradient>
+              <linearGradient id="mistGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#b8dde8" stopOpacity="0" />
+                <stop offset="50%" stopColor="#b8dde8" stopOpacity="0.3" />
+                <stop offset="100%" stopColor="#b8dde8" stopOpacity="0" />
+              </linearGradient>
+
+              <filter id="shadow">
+                <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="#000" floodOpacity="0.4" />
+              </filter>
+              <filter id="glow">
+                <feGaussianBlur stdDeviation="2" result="coloredBlur" />
+                <feMerge>
+                  <feMergeNode in="coloredBlur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+              <filter id="blur">
+                <feGaussianBlur stdDeviation="4" />
+              </filter>
             </defs>
 
-            <rect width="400" height="250" fill="url(#skyGrad)" />
-            <circle cx="320" cy="60" r="20" fill="#f6e05e" opacity="0.9" />
-            <circle cx="320" cy="60" r="28" fill="#f6e05e" opacity="0.2" />
+            {/* === НЕБО === */}
+            <rect width="400" height="300" fill="url(#skyGrad)" />
 
-            <path d="M 0 250 L 80 120 L 160 180 L 240 80 L 320 150 L 400 100 L 400 250 Z" fill="#1a202c" />
-            <path d="M 100 250 L 180 90 L 260 130 L 340 60 L 380 250 Z" fill="url(#mountGrad)" />
-
-            <path d="M 60 250 L 120 140 L 200 170 L 280 120 L 350 180 L 380 250 Z" fill="url(#jungleGrad)" />
-            <g fill="#276749">
-              <polygon points="130,160 145,120 160,160" />
-              <rect x="142" y="160" width="6" height="15" fill="#4a3520" />
-              <polygon points="200,180 220,130 240,180" />
-              <rect x="217" y="180" width="6" height="20" fill="#4a3520" />
-              <polygon points="290,140 310,90 330,140" />
-              <rect x="307" y="140" width="6" height="25" fill="#4a3520" />
+            {/* Облака — тускнеют, когда небо темнеет */}
+            <g opacity="0.22" filter="url(#blur)">
+              <ellipse cx="90" cy="42" rx="55" ry="7" fill="#7fa8c0" />
+              <ellipse cx="260" cy="34" rx="60" ry="6" fill="#7fa8c0" />
+              <ellipse cx="350" cy="52" rx="40" ry="6" fill="#6f98b0" />
             </g>
 
-            <path d="M 20 250 L 80 200 L 150 210 L 250 190 L 350 220 L 400 250 Z" fill="url(#sandGrad)" />
-            <path d="M 90 220 L 110 210 L 120 225 Z" fill="#718096" />
-            <path d="M 280 210 L 300 200 L 310 215 Z" fill="#718096" />
+            {/* === ЗЕЛЁНЫЕ ГОРЫ — растут прямо из острова === */}
+            <g>
+              <path d="M60 178 L98 118 L128 150 L168 96 L208 142 L246 92 L286 138 L318 112 L348 178 Z" fill="url(#mountFar)" />
+              <path d="M75 180 L112 138 L148 158 L188 122 L226 152 L262 126 L300 154 L336 140 L352 180 Z" fill="url(#mountMid)" />
+              <path d="M88 182 L126 152 L162 168 L204 146 L248 164 L288 150 L330 166 L356 182 Z" fill="url(#mountNear)" />
+              {/* Морщинки-складыки на склонах */}
+              <g stroke="#16301f" strokeWidth="1" fill="none" opacity="0.35">
+                <path d="M168 96 L176 120 M168 96 L160 118" />
+                <path d="M246 92 L254 116 M246 92 L238 114" />
+                <path d="M98 118 L106 138 M98 118 L92 136" />
+              </g>
+              {/* Мховые пятна на склонах */}
+              <g fill="#4f8a4a" opacity="0.25">
+                <ellipse cx="150" cy="140" rx="16" ry="7" />
+                <ellipse cx="270" cy="135" rx="14" ry="6" />
+                <ellipse cx="210" cy="150" rx="12" ry="5" />
+              </g>
+            </g>
+
+            {/* Туман у подножия гор */}
+            <rect x="0" y="150" width="400" height="34" fill="url(#mistGrad)" opacity="0.45" />
+
+            {/* === ОСТРОВ — увеличен, очень много зелени === */}
+            <g filter="url(#shadow)">
+              {/* Скальное основание */}
+              <path d="M62 194 Q78 178 104 184 Q136 172 170 178 Q204 170 238 176 Q276 170 306 180 Q332 184 340 194 Q334 202 302 206 Q252 211 200 209 Q142 211 100 206 Q68 202 62 194 Z" fill="url(#rockGrad)" />
+              {/* Песчаная кромка */}
+              <path d="M72 198 Q120 206 200 204 Q280 207 330 199 Q320 206 270 209 Q210 212 150 209 Q95 206 72 198 Z" fill="url(#sandGrad)" opacity="0.85" />
+              {/* Травяной покров */}
+              <path d="M88 184 Q124 170 168 176 Q206 168 244 174 Q282 168 314 182 Q300 190 258 188 Q214 192 172 188 Q122 192 88 184 Z" fill="url(#grassGrad)" />
+              <g fill="#6fae4a" opacity="0.5">
+                <ellipse cx="140" cy="182" rx="22" ry="5" />
+                <ellipse cx="230" cy="180" rx="26" ry="5" />
+                <ellipse cx="290" cy="184" rx="18" ry="4" />
+              </g>
+
+              {/* Руины, поросшие мхом */}
+              <g fill="url(#ruinGrad)" stroke="#2f4a34" strokeWidth="0.5">
+                <rect x="186" y="150" width="6" height="26" rx="1" />
+                <rect x="184" y="148" width="10" height="3" rx="1" />
+                <rect x="184" y="174" width="10" height="3" rx="1" />
+                <rect x="212" y="158" width="6" height="18" rx="1" />
+                <path d="M212 158 L215 154 L218 157 Z" fill="#6a6a5a" />
+                <rect x="240" y="152" width="6" height="24" rx="1" transform="rotate(8 243 164)" />
+                <rect x="238" y="150" width="10" height="3" rx="1" transform="rotate(8 243 151)" />
+                <path d="M256 164 L272 160 L274 172 L259 174 Z" opacity="0.8" />
+                <path d="M196 154 Q202 146 208 154" fill="none" stroke="#7a7a6a" strokeWidth="2" opacity="0.6" />
+              </g>
+              <g fill="#3f7a3f" opacity="0.75">
+                <ellipse cx="189" cy="168" rx="3" ry="4" />
+                <ellipse cx="215" cy="170" rx="2.5" ry="3" />
+                <ellipse cx="243" cy="168" rx="3" ry="3.5" />
+              </g>
+              <path d="M186 150 q3 5 0 10 M241 154 q3 5 0 10" stroke="#4f8a4a" strokeWidth="1.5" fill="none" opacity="0.8" />
+
+              {/* ЛЕС — деревья everywhere */}
+              <g>
+                <path d="M98 188 Q96 174 99 162" stroke="#5a4a32" strokeWidth="2.5" fill="none" />
+                <ellipse cx="99" cy="156" rx="13" ry="10" fill="#3f7a3f" />
+                <ellipse cx="92" cy="160" rx="8" ry="6" fill="#4f8a4a" opacity="0.85" />
+                <ellipse cx="106" cy="159" rx="7" ry="5" fill="#356a35" opacity="0.9" />
+
+                <path d="M124 190 Q123 180 125 171" stroke="#5a4a32" strokeWidth="2" fill="none" />
+                <ellipse cx="125" cy="166" rx="10" ry="8" fill="#458045" />
+                <ellipse cx="119" cy="169" rx="6" ry="5" fill="#55955a" opacity="0.8" />
+
+                <path d="M78 192 Q77 182 80 173" stroke="#5a4a32" strokeWidth="2" fill="none" />
+                <ellipse cx="80" cy="168" rx="9" ry="7" fill="#3a7038" />
+
+                <path d="M178 182 Q177 168 179 157" stroke="#5a4a32" strokeWidth="2" fill="none" />
+                <ellipse cx="179" cy="152" rx="10" ry="8" fill="#458045" />
+                <ellipse cx="174" cy="155" rx="6" ry="5" fill="#55955a" opacity="0.8" />
+
+                <path d="M232 181 Q233 166 231 153" stroke="#5a4a32" strokeWidth="2.5" fill="none" />
+                <ellipse cx="231" cy="148" rx="11" ry="9" fill="#3a7038" />
+                <ellipse cx="237" cy="151" rx="7" ry="6" fill="#4f8a4a" opacity="0.85" />
+
+                <path d="M278 188 Q277 177 279 168" stroke="#5a4a32" strokeWidth="2" fill="none" />
+                <ellipse cx="279" cy="164" rx="9" ry="7" fill="#356a35" />
+
+                <path d="M300 187 Q302 173 299 161" stroke="#5a4a32" strokeWidth="2.5" fill="none" />
+                <ellipse cx="299" cy="156" rx="12" ry="9" fill="#3f7a3f" />
+                <ellipse cx="305" cy="159" rx="7" ry="6" fill="#4f8a4a" opacity="0.85" />
+
+                <path d="M322 190 Q323 180 321 171" stroke="#5a4a32" strokeWidth="2" fill="none" />
+                <ellipse cx="321" cy="166" rx="10" ry="8" fill="#458045" />
+              </g>
+
+              {/* Кусты, папоротники, трава, цветы */}
+              <g fill="#2f5f30">
+                <ellipse cx="110" cy="188" rx="11" ry="5" />
+                <ellipse cx="146" cy="190" rx="9" ry="4" />
+                <ellipse cx="206" cy="191" rx="10" ry="4" />
+                <ellipse cx="258" cy="190" rx="11" ry="5" />
+                <ellipse cx="292" cy="188" rx="8" ry="4" />
+                <ellipse cx="334" cy="192" rx="7" ry="3.5" />
+              </g>
+              <g stroke="#4f8a4a" strokeWidth="1.2" fill="none" opacity="0.9">
+                <path d="M132 188 Q130 180 134 174 M132 188 Q136 182 134 176 M132 188 Q128 183 127 177" />
+                <path d="M222 190 Q220 182 224 176 M222 190 Q226 184 224 178" />
+                <path d="M270 189 Q268 181 272 175 M270 189 Q274 183 272 177" />
+              </g>
+              <g stroke="#6fae4a" strokeWidth="1" fill="none" opacity="0.7">
+                <path d="M96 194 q2 -6 4 -8 M104 194 q0 -5 2 -8 M160 192 q2 -5 4 -7 M196 194 q0 -5 2 -7 M248 193 q2 -5 4 -7 M310 193 q0 -5 2 -7" />
+              </g>
+              <g fill="#e8d36a" opacity="0.8">
+                <circle cx="152" cy="186" r="1.4" />
+                <circle cx="214" cy="188" r="1.4" />
+                <circle cx="268" cy="186" r="1.4" />
+              </g>
+
+              {/* Светящаяся руна */}
+              <g filter="url(#glow)">
+                <circle cx="200" cy="176" r="5" fill="url(#runeGlow)" />
+                <circle cx="200" cy="176" r="2.5" fill="#55a4fe" opacity="0.95" />
+              </g>
+            </g>
+
+            {/* === ДИНАМИЧЕСКОЕ ЗАТЕМНЕНИЕ НЕБА (при провалах) === */}
+            <rect x="0" y="0" width="400" height="200" fill="url(#darkSky)" style={{ opacity: darkness, transition: "opacity 1.2s ease" }} />
+
+            {/* Звёзды — разгораются, когда небо темнеет */}
+            <g style={{ opacity: 0.3 + darkness * 0.7, transition: "opacity 1.2s ease" }}>
+              <circle cx="45" cy="18" r="1" fill="white" />
+              <circle cx="120" cy="12" r="0.8" fill="white" />
+              <circle cx="200" cy="22" r="1.2" fill="white" />
+              <circle cx="280" cy="15" r="0.7" fill="white" />
+              <circle cx="340" cy="25" r="1" fill="white" />
+              <circle cx="75" cy="30" r="0.6" fill="white" />
+              <circle cx="310" cy="8" r="0.9" fill="white" />
+              <circle cx="160" cy="35" r="0.7" fill="white" />
+              <circle cx="380" cy="18" r="0.8" fill="white" />
+              <circle cx="240" cy="6" r="0.8" fill="white" />
+              <circle cx="20" cy="40" r="0.7" fill="white" />
+            </g>
+
+            {/* === ВЕТЕР — появляется при провалах === */}
+            <g style={{ opacity: windStrength, transition: "opacity 1.2s ease" }} stroke="#d6ecf7" fill="none" strokeWidth="1.2" strokeLinecap="round">
+              <g className="animate-[wind-blow_5s_ease-in-out_infinite]">
+                <path d="M28 52 Q58 46 88 52 Q102 55 112 50" opacity="0.5" />
+                <path d="M140 38 Q172 33 204 38" opacity="0.4" />
+              </g>
+              <g className="animate-[wind-blow_8s_ease-in-out_infinite_reverse]">
+                <path d="M236 60 Q272 54 308 60 Q324 63 336 58" opacity="0.45" />
+                <path d="M56 74 Q90 68 124 74" opacity="0.35" />
+              </g>
+            </g>
+
+            {/* === ВОДА === */}
+            <rect x="0" y="190" width="400" height="110" fill="url(#waterTopGrad)" />
+
+            {/* Подводный мир */}
+            <g opacity="0.5">
+              <rect x="186" y="190" width="6" height="30" fill="url(#ruinGrad)" opacity="0.4" />
+              <rect x="240" y="190" width="6" height="25" fill="url(#ruinGrad)" opacity="0.35" transform="rotate(8 243 200)" />
+              <path d="M120 200 L165 195 L170 212 L126 216 Z" fill="#5a5a4a" opacity="0.3" />
+              <path d="M255 198 L300 195 L306 212 L262 216 Z" fill="#5a5a4a" opacity="0.3" />
+              <g stroke="#3a2a1a" fill="none" strokeWidth="2" opacity="0.35">
+                <path d="M90 195 L88 228 L85 244" />
+                <path d="M88 212 L80 202" />
+                <path d="M88 222 L96 214" />
+                <path d="M330 198 L332 232 L330 248" />
+                <path d="M332 216 L340 206" />
+                <path d="M331 226 L324 219" />
+              </g>
+              <ellipse cx="130" cy="230" rx="12" ry="6" fill="#4a5a4a" opacity="0.3" />
+              <ellipse cx="280" cy="240" rx="15" ry="7" fill="#4a5a4a" opacity="0.3" />
+              <ellipse cx="200" cy="250" rx="10" ry="5" fill="#4a5a4a" opacity="0.25" />
+              <g stroke="#2a6a3a" fill="none" strokeWidth="1.5" opacity="0.4">
+                <path d="M110 260 Q115 245 110 230 Q105 220 110 210" />
+                <path d="M115 265 Q120 250 115 235" />
+                <path d="M300 255 Q305 240 300 225 Q295 215 300 205" />
+                <path d="M305 260 Q310 245 305 230" />
+                <path d="M200 270 Q205 255 200 240" />
+                <path d="M210 268 Q215 252 210 238" />
+              </g>
+              <g opacity="0.35">
+                <ellipse cx="145" cy="225" rx="5" ry="2.5" fill="#ff8a6a" />
+                <polygon points="150,225 154,222 154,228" fill="#ff8a6a" />
+                <ellipse cx="260" cy="235" rx="4" ry="2" fill="#ffd93d" />
+                <polygon points="264,235 268,233 268,237" fill="#ffd93d" />
+                <ellipse cx="180" cy="248" rx="4" ry="2" fill="#6bcb77" />
+                <polygon points="184,248 187,246 187,250" fill="#6bcb77" />
+                <ellipse cx="310" cy="220" rx="3.5" ry="1.8" fill="#8ab4ff" />
+                <polygon points="313,220 316,218 316,222" fill="#8ab4ff" />
+              </g>
+              <g fill="none" stroke="#8ad4ff" strokeWidth="0.5" opacity="0.3">
+                <circle cx="160" cy="215" r="2" />
+                <circle cx="162" cy="208" r="1.5" />
+                <circle cx="250" cy="220" r="2.5" />
+                <circle cx="252" cy="212" r="1.5" />
+                <circle cx="190" cy="230" r="1.8" />
+              </g>
+              <g fill="#5a5a4a" opacity="0.25">
+                <rect x="220" y="200" width="20" height="3" />
+                <rect x="222" y="204" width="18" height="3" />
+                <rect x="224" y="208" width="16" height="3" />
+                <rect x="226" y="212" width="14" height="3" />
+              </g>
+            </g>
+
+            <rect x="0" y="190" width="400" height="110" fill="url(#underwaterGlow)" />
+
+            {/* Глубокая вода */}
+            <rect x="0" y="240" width="400" height="60" fill="url(#waterMidGrad)" />
+            <rect x="0" y="265" width="400" height="35" fill="url(#waterDeepGrad)" />
+
+            {/* Волны на поверхности */}
+            <g className="animate-[wave-move_8s_linear_infinite]">
+              <path d="M0,192 Q20,188 40,192 T80,192 T120,192 T160,192 T200,192 T240,192 T280,192 T320,192 T360,192 T400,192" fill="none" stroke="#b8dde8" strokeWidth="1.5" opacity="0.5" />
+              <path d="M0,196 Q25,192 50,196 T100,196 T150,196 T200,196 T250,196 T300,196 T350,196 T400,196" fill="none" stroke="#8ac8e0" strokeWidth="1" opacity="0.35" />
+            </g>
+
+            {/* Блики */}
+            <g opacity="0.2">
+              <ellipse cx="90" cy="200" rx="18" ry="2.5" fill="white" />
+              <ellipse cx="310" cy="205" rx="22" ry="3" fill="white" />
+              <ellipse cx="200" cy="210" rx="12" ry="2" fill="white" />
+              <ellipse cx="150" cy="198" rx="10" ry="1.5" fill="white" />
+            </g>
           </svg>
 
+          {/* === ДИНАМИЧЕСКИЙ УРОВЕНЬ ВОДЫ (overlay) === */}
           <div
-            className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-[#001e3c] via-[#034078]/90 to-[#0077b6]/80 transition-all duration-1000 ease-in-out z-20"
+            className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-[#051525] via-[#0a2a4a]/90 to-[#2a6a8a]/70 transition-all duration-1000 ease-in-out z-20"
             style={{ height: `${waterLevel}%` }}
           >
             <div className="absolute top-0 left-0 w-full overflow-hidden leading-none">
               <svg viewBox="0 0 1200 120" preserveAspectRatio="none" className="w-[200%] h-8 animate-[wave-move_8s_linear_infinite]">
-                <path d="M0,60 C150,120 300,0 450,60 C600,120 750,0 900,60 C1050,120 1200,0 1200,60 L1200,120 L0,120 Z" fill="#ffffff" opacity="0.2" />
+                <path d="M0,60 C150,120 300,0 450,60 C600,120 750,0 900,60 C1050,120 1200,0 1200,60 L1200,120 L0,120 Z" fill="#ffffff" opacity="0.25" />
               </svg>
-              <svg viewBox="0 0 1200 120" preserveAspectRatio="none" className="w-[200%] h-8 absolute top-2 animate-[wave-move_12s_linear_infinite_reverse]">
-                <path d="M0,60 C150,120 300,0 450,60 C600,120 750,0 900,60 C1050,120 1200,0 1200,60 L1200,120 L0,120 Z" fill="#55A4FE" opacity="0.3" />
+              <svg viewBox="0 0 1200 120" preserveAspectRatio="none" className="w-[200%] h-8 absolute top-1 animate-[wave-move_12s_linear_infinite_reverse]">
+                <path d="M0,60 C150,120 300,0 450,60 C600,120 750,0 900,60 C1050,120 1200,0 1200,60 L1200,120 L0,120 Z" fill="#b8dde8" opacity="0.3" />
               </svg>
             </div>
           </div>
 
-          <div className="absolute top-3 left-3 bg-black/80 px-3 py-1.5 rounded-lg backdrop-blur-md z-30 border border-white/10 shadow-lg">
-            <span className={`text-[11px] font-bold tracking-wider ${waterLevel > 60 ? "text-red-400" : "text-cyan-300"}`}>
-              УРОВЕНЬ ВОДЫ: {waterLevel}%
+          {/* Индикатор уровня воды */}
+          <div className="absolute top-2 left-2 bg-black/70 px-2.5 py-1 rounded-lg backdrop-blur-md z-30 border border-white/20 shadow-lg">
+            <span className={`text-[10px] font-bold tracking-wider ${waterLevel > 60 ? "text-red-400" : "text-white"}`}>
+              ВОДА: {waterLevel}%
+            </span>
+          </div>
+
+          {/* Название */}
+          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-30">
+            <span className="text-[9px] font-bold tracking-[0.15em] text-white/40 uppercase">
+          
             </span>
           </div>
         </div>
@@ -544,7 +825,7 @@ export default function RoundOnePage() {
         <span>СИСТЕМА НАВИГАЦИИ / ONLINE</span>
       </div>
 
-      {/* ================= ДИАЛОГИ (интро / реакции / пост) ================= */}
+      {/* ================= ДИАЛОГИ ================= */}
       {modalState === "dialogue" && activeZone && (
         <div className="fixed inset-0 z-50 flex items-end justify-center pb-8 bg-black/70 backdrop-blur-sm transition-opacity">
           <div className="w-full max-w-4xl rounded-2xl border-2 border-[#55A4FE]/40 bg-[#03172c]/95 p-8 shadow-2xl shadow-[#55A4FE]/20 relative">
@@ -590,7 +871,7 @@ export default function RoundOnePage() {
         </div>
       )}
 
-      {/* ================= ЗАДАНИЕ (сразу варианты, без брифинга) ================= */}
+      {/* ================= ЗАДАНИЕ ================= */}
       {modalState === "task" && activeZone && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
           <div className="w-full max-w-lg rounded-2xl border border-[#55A4FE]/30 bg-[#03172c] p-6 text-white shadow-2xl shadow-[#55A4FE]/10">
@@ -787,6 +1068,11 @@ export default function RoundOnePage() {
         @keyframes wave-move {
           from { transform: translateX(0); }
           to { transform: translateX(-50%); }
+        }
+        
+        @keyframes wind-blow {
+          0% { transform: translateX(-24px); }
+          100% { transform: translateX(24px); }
         }
 
         .reef {
