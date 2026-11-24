@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const zones = [
   {
@@ -28,10 +29,10 @@ const zones = [
       title: "Испытание Водяного Стража",
       question: "Страж проскрипел: «Мой механизм заклинило. Чтобы шестерёнки закрутились без трения и водопад ожил, расставьте их по размеру — от меньшей к большей».",
       options: [
-        { id: "a", label: "⚙️ Огромная → Большая → Средняя → Малая", correct: false },
-        { id: "b", label: "⚙️ Малая → Средняя → Большая → Огромная", correct: true },
-        { id: "c", label: "⚙️ Сварить все шестерёнки в один монолит", correct: false },
-        { id: "d", label: "⚙️ Выкинуть шестерёнки и толкнуть рычаг", correct: false },
+        { id: "a", label: "⚙️ Огромная → Большая → Средняя → Малая" },
+        { id: "b", label: "⚙️ Малая → Средняя → Большая → Огромная" },
+        { id: "c", label: "⚙️ Сварить все шестерёнки в один монолит" },
+        { id: "d", label: "⚙️ Выкинуть шестерёнки и толкнуть рычаг" },
       ],
     },
     successDialogues: [
@@ -71,10 +72,10 @@ const zones = [
       title: "Испытание Каменного Голема",
       question: "Голем загудел: «Стены пещеры повторяют мысли. Скажи слово, которое никогда не меняется и не боится темноты — и я отступлю от руны».",
       options: [
-        { id: "a", label: "🏠 Домой", correct: false },
-        { id: "b", label: "💧 Вода", correct: false },
-        { id: "c", label: "🪨 Камень", correct: true },
-        { id: "d", label: "🌑 Тьма", correct: false },
+        { id: "a", label: "🏠 Домой" },
+        { id: "b", label: "💧 Вода" },
+        { id: "c", label: "🪨 Камень" },
+        { id: "d", label: "🌑 Тьма" },
       ],
     },
     successDialogues: [
@@ -115,10 +116,10 @@ const zones = [
       title: "Испытание Трясинного Духа",
       question: "Дух пропел, и его фонарики мигнули: «Я покажу верную дорогу к руне. Но у меня одно правило. Что нельзя делать, пока идёшь за моим огоньком?»",
       options: [
-        { id: "a", label: "👀 Оглядываться", correct: true },
-        { id: "b", label: "🗣️ Разговаривать", correct: false },
-        { id: "c", label: "💡 Светить фонарём", correct: false },
-        { id: "d", label: "🏃 Бежать", correct: false },
+        { id: "a", label: "👀 Оглядываться" },
+        { id: "b", label: "🗣️ Разговаривать" },
+        { id: "c", label: "💡 Светить фонарём" },
+        { id: "d", label: "🏃 Бежать" },
       ],
     },
     successDialogues: [
@@ -159,10 +160,10 @@ const zones = [
       title: "Испытание Песчаного Скорпиона",
       question: "Скорпион проскрежетал хвостом-цепью: «Стекло под ногами острых и звонких. Скажи, как правильно идти по моему пляжу, чтобы я пропустил тебя к руне».",
       options: [
-        { id: "a", label: "🏃 Бежать как можно быстрее", correct: false },
-        { id: "b", label: "👣 Не спешить и смотреть под ноги", correct: true },
-        { id: "c", label: "🌪️ Идти против ветра", correct: false },
-        { id: "d", label: "🪨 Бросать камни вперёд", correct: false },
+        { id: "a", label: "🏃 Бежать как можно быстрее" },
+        { id: "b", label: "👣 Не спешить и смотреть под ноги" },
+        { id: "c", label: "🌪️ Идти против ветра" },
+        { id: "d", label: "🪨 Бросать камни вперёд" },
       ],
     },
     successDialogues: [
@@ -205,10 +206,10 @@ const zones = [
       title: "Испытание Хранителя Времени",
       question: "Хранитель загудел остановленными стрелками: «Я остановил время. Отгадай загадку, и я открою последнюю руну: Я всегда иду, но никогда не двигаюсь с места. У меня есть лицо, но нет глаз. Что я?»",
       options: [
-        { id: "a", label: "⏳ Время (Часы)", correct: true },
-        { id: "b", label: "⚡ Молния", correct: false },
-        { id: "c", label: "📡 Эхо", correct: false },
-        { id: "d", label: "🔧 Механизм", correct: false },
+        { id: "a", label: "⏳ Время (Часы)" },
+        { id: "b", label: "⚡ Молния" },
+        { id: "c", label: "📡 Эхо" },
+        { id: "d", label: "🔧 Механизм" },
       ],
     },
     successDialogues: [
@@ -227,6 +228,12 @@ const zones = [
   },
 ];
 
+type SavedAnswer = {
+  zone_id: number;
+  selected_option: string;
+  is_correct: boolean;
+};
+
 export default function RoundOnePage() {
   const [selectedZone, setSelectedZone] = useState<number | null>(null);
   const [unlockedZones, setUnlockedZones] = useState<number[]>([0]);
@@ -234,7 +241,6 @@ export default function RoundOnePage() {
   const [failedZones, setFailedZones] = useState<number[]>([]);
 
   const [modalState, setModalState] = useState<"none" | "dialogue" | "task" | "result">("none");
-  // Фазы диалога: intro → reactions → post
   const [dialoguePhase, setDialoguePhase] = useState<"intro" | "reactions" | "post">("intro");
   const [dialogueIndex, setDialogueIndex] = useState(0);
 
@@ -243,15 +249,104 @@ export default function RoundOnePage() {
 
   const [waterLevel, setWaterLevel] = useState(50);
 
+  const [isLoadingProgress, setIsLoadingProgress] = useState(true);
+  const [isSubmittingAnswer, setIsSubmittingAnswer] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
+
   const activeZone = selectedZone !== null ? zones[selectedZone] : null;
 
-  const handleZoneClick = (index: number) => {
-    if (unlockedZones.includes(index) && !completedZones.includes(index) && !failedZones.includes(index)) {
-      setSelectedZone(index);
-      setDialoguePhase("intro");
-      setModalState("dialogue");
-      setDialogueIndex(0);
+  // Загружаем сохранённый прогресс команды
+  useEffect(() => {
+    async function loadProgress() {
+      try {
+        const response = await fetch("/api/round1/progress");
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error ?? "Не удалось загрузить прогресс");
+        }
+
+        const answers: SavedAnswer[] = data.answers ?? [];
+
+        const completed = answers
+          .filter((answer) => answer.is_correct)
+          .map((answer) => answer.zone_id - 1);
+
+        const failed = answers
+          .filter((answer) => !answer.is_correct)
+          .map((answer) => answer.zone_id - 1);
+
+        const unlocked = Array.from(
+          new Set([
+            0,
+            ...answers
+              .map((answer) => answer.zone_id)
+              .filter((zoneId) => zoneId < zones.length),
+          ])
+        );
+
+        setCompletedZones(completed);
+        setFailedZones(failed);
+        setUnlockedZones(unlocked);
+
+        setWaterLevel(
+          Math.max(
+            0,
+            Math.min(100, 50 - completed.length * 10 + failed.length * 7)
+          )
+        );
+
+        if (answers.length === zones.length) {
+          setModalState("result");
+        }
+      } catch (error) {
+        setApiError(
+          error instanceof Error
+            ? error.message
+            : "Ошибка загрузки прогресса"
+        );
+      } finally {
+        setIsLoadingProgress(false);
+      }
     }
+
+    loadProgress();
+  }, []);
+
+  const handleZoneClick = (index: number) => {
+    if (
+      isLoadingProgress ||
+      apiError ||
+      !unlockedZones.includes(index) ||
+      completedZones.includes(index) ||
+      failedZones.includes(index)
+    ) {
+      return;
+    }
+
+    setSelectedZone(index);
+    setDialoguePhase("intro");
+    setModalState("dialogue");
+    setDialogueIndex(0);
+    setSelectedAnswer(null);
+    setAnswerStatus("idle");
+    setApiError(null);
+  };
+
+  const getDialoguesForPhase = () => {
+    if (!activeZone) return [];
+
+    if (dialoguePhase === "intro") {
+      return activeZone.dialogues;
+    }
+
+    if (dialoguePhase === "reactions") {
+      return activeZone.reactionDialogues;
+    }
+
+    return answerStatus === "correct"
+      ? activeZone.successDialogues
+      : activeZone.failureDialogues;
   };
 
   const handleNextDialogue = () => {
@@ -264,78 +359,141 @@ export default function RoundOnePage() {
       return;
     }
 
-    // Конец текущей фазы диалога
     if (dialoguePhase === "intro") {
-      // Сразу переходим к ЗАДАНИЮ (без брифинга)
       setModalState("task");
       setSelectedAnswer(null);
       setAnswerStatus("idle");
     } else if (dialoguePhase === "reactions") {
-      // Реакции закончились → результат (успех/провал)
       setDialoguePhase("post");
       setDialogueIndex(0);
     } else {
-      // post закончился → закрыть
       setModalState("none");
       setSelectedZone(null);
       setSelectedAnswer(null);
       setAnswerStatus("idle");
+
       if (completedZones.length + failedZones.length === zones.length) {
-        setTimeout(() => setModalState("result"), 300);
+        setModalState("result");
       }
     }
   };
 
-  const getDialoguesForPhase = () => {
-    if (!activeZone) return [];
-    if (dialoguePhase === "intro") return activeZone.dialogues;
-    if (dialoguePhase === "reactions") return activeZone.reactionDialogues;
-    return answerStatus === "correct" ? activeZone.successDialogues : activeZone.failureDialogues;
-  };
-
   const handleSelectAnswer = (optionId: string) => {
-    if (answerStatus !== "idle") return;
+    if (answerStatus !== "idle" || isSubmittingAnswer) return;
+
     setSelectedAnswer(optionId);
+    setApiError(null);
   };
 
-  const handleCheckAnswer = () => {
-    if (!selectedAnswer || !activeZone || selectedZone === null) return;
-
-    const answerObj = activeZone.task.options.find((o) => o.id === selectedAnswer);
-
-    if (answerObj?.correct) {
-      setAnswerStatus("correct");
-      setCompletedZones((prev) => [...prev, selectedZone]);
-      setWaterLevel((prev) => Math.max(prev - 10, 0));
-    } else {
-      setAnswerStatus("wrong");
-      setFailedZones((prev) => [...prev, selectedZone]);
-      setWaterLevel((prev) => Math.min(prev + 7, 100));
+  // Отправляем ответ на сервер.
+  // Правильность ответа определяется только функцией Supabase.
+  const handleCheckAnswer = async () => {
+    if (
+      !selectedAnswer ||
+      !activeZone ||
+      selectedZone === null ||
+      isSubmittingAnswer
+    ) {
+      return;
     }
 
-    const nextIndex = selectedZone + 1;
-    if (nextIndex < zones.length && !unlockedZones.includes(nextIndex)) {
-      setUnlockedZones((prev) => [...prev, nextIndex]);
+    setIsSubmittingAnswer(true);
+    setApiError(null);
+
+    try {
+      const response = await fetch("/api/round1/answer", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          zoneId: activeZone.id,
+          optionId: selectedAnswer,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "Не удалось сохранить ответ");
+      }
+
+      const isCorrect = data.is_correct;
+
+      setAnswerStatus(isCorrect ? "correct" : "wrong");
+
+      const nextCompleted = isCorrect
+        ? Array.from(new Set([...completedZones, selectedZone]))
+        : completedZones;
+
+      const nextFailed = !isCorrect
+        ? Array.from(new Set([...failedZones, selectedZone]))
+        : failedZones;
+
+      setCompletedZones(nextCompleted);
+      setFailedZones(nextFailed);
+
+      setWaterLevel(
+        Math.max(
+          0,
+          Math.min(100, 50 - nextCompleted.length * 10 + nextFailed.length * 7)
+        )
+      );
+
+      // Открываем следующую зону после сохранения ответа на сервере
+      const nextIndex = selectedZone + 1;
+
+      if (nextIndex < zones.length) {
+        setUnlockedZones((prev) =>
+          prev.includes(nextIndex) ? prev : [...prev, nextIndex]
+        );
+      }
+    } catch (error) {
+      setApiError(
+        error instanceof Error
+          ? error.message
+          : "Не удалось отправить ответ"
+      );
+    } finally {
+      setIsSubmittingAnswer(false);
     }
   };
 
-  // После ответа → идём в РЕАКЦИИ персонажей на выполненное задание
   const handleProceedAfterAnswer = () => {
     setDialoguePhase("reactions");
     setModalState("dialogue");
     setDialogueIndex(0);
   };
 
-  const resetProgress = () => {
-    window.location.reload();
-  };
-
-  const progressPercent = Math.round((completedZones.length / zones.length) * 100);
+  const progressPercent = Math.round(
+    (completedZones.length / zones.length) * 100
+  );
 
   const currentDialogues = getDialoguesForPhase();
 
   return (
     <main className="island-map">
+      {/* Загрузка прогресса */}
+      {isLoadingProgress && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#03172c]">
+          <div className="text-center">
+            <div className="mb-4 text-lg font-bold text-[#69caff]">
+              Загрузка игрового прогресса...
+            </div>
+            <div className="mx-auto h-2 w-48 overflow-hidden rounded-full bg-white/10">
+              <div className="h-full w-1/2 animate-pulse rounded-full bg-[#55A4FE]" />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Ошибка загрузки или сохранения */}
+      {apiError && (
+        <div className="fixed left-1/2 top-5 z-[90] w-[calc(100%-32px)] max-w-xl -translate-x-1/2 rounded-xl border border-red-500/40 bg-red-950/95 px-5 py-3 text-center text-sm text-red-200 shadow-xl">
+          {apiError}
+        </div>
+      )}
+
       {/* ================= ПРОГРЕСС-БАР ================= */}
       <div className="absolute top-8 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-2">
         <div className="relative h-8 w-[400px] overflow-hidden rounded-full border-2 border-white/20 bg-black/60 shadow-[0_0_20px_rgba(0,0,0,0.8)] backdrop-blur-md">
@@ -512,7 +670,7 @@ export default function RoundOnePage() {
               type="button"
               title={isLocked ? "Зона заблокирована" : isCompleted ? "Зона пройдена" : isFailed ? "Зона провалена" : zone.name}
               onClick={() => handleZoneClick(index)}
-              disabled={isLocked || isCompleted || isFailed}
+              disabled={isLoadingProgress || !!apiError || isLocked || isCompleted || isFailed}
               className={`zone-marker ${isLocked ? "zone-marker-locked" : ""} ${isCompleted ? "zone-marker-completed" : ""} ${isFailed ? "zone-marker-failed" : ""}`}
               style={{ left: `${zone.x}%`, top: `${zone.y}%` }}
             >
@@ -544,7 +702,7 @@ export default function RoundOnePage() {
         <span>СИСТЕМА НАВИГАЦИИ / ONLINE</span>
       </div>
 
-      {/* ================= ДИАЛОГИ (интро / реакции / пост) ================= */}
+      {/* ================= ДИАЛОГИ ================= */}
       {modalState === "dialogue" && activeZone && (
         <div className="fixed inset-0 z-50 flex items-end justify-center pb-8 bg-black/70 backdrop-blur-sm transition-opacity">
           <div className="w-full max-w-4xl rounded-2xl border-2 border-[#55A4FE]/40 bg-[#03172c]/95 p-8 shadow-2xl shadow-[#55A4FE]/20 relative">
@@ -590,7 +748,7 @@ export default function RoundOnePage() {
         </div>
       )}
 
-      {/* ================= ЗАДАНИЕ (сразу варианты, без брифинга) ================= */}
+      {/* ================= ЗАДАНИЕ ================= */}
       {modalState === "task" && activeZone && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
           <div className="w-full max-w-lg rounded-2xl border border-[#55A4FE]/30 bg-[#03172c] p-6 text-white shadow-2xl shadow-[#55A4FE]/10">
@@ -611,14 +769,14 @@ export default function RoundOnePage() {
               <div className="grid grid-cols-1 gap-3">
                 {activeZone.task.options.map((option) => {
                   const isSelected = selectedAnswer === option.id;
-                  const isCorrect = answerStatus === "correct" && option.correct;
+                  const isCorrect = answerStatus === "correct" && isSelected;
                   const isWrong = answerStatus === "wrong" && isSelected;
 
                   return (
                     <button
                       key={option.id}
                       onClick={() => handleSelectAnswer(option.id)}
-                      disabled={answerStatus !== "idle"}
+                      disabled={answerStatus !== "idle" || isSubmittingAnswer}
                       className={`relative flex items-center gap-3 rounded-xl border-2 p-4 text-left text-sm font-semibold transition-all ${
                         isCorrect
                           ? "border-green-500 bg-green-500/20 text-green-300"
@@ -640,11 +798,18 @@ export default function RoundOnePage() {
                 })}
               </div>
 
+              {apiError && (
+                <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-center">
+                  <p className="text-sm text-red-300">{apiError}</p>
+                </div>
+              )}
+
               {answerStatus === "wrong" && (
                 <div className="text-center p-3 rounded-lg bg-red-500/10 border border-red-500/30">
                   <p className="text-sm font-bold text-red-400">Неверно! Остров уходит под воду (+7%).</p>
                 </div>
               )}
+
               {answerStatus === "correct" && (
                 <div className="text-center p-3 rounded-lg bg-green-500/10 border border-green-500/30">
                   <p className="text-sm font-bold text-green-400">Верно! Руна ваша. Уровень воды понижается (-10%).</p>
@@ -666,10 +831,10 @@ export default function RoundOnePage() {
                 ) : (
                   <button
                     onClick={handleCheckAnswer}
-                    disabled={!selectedAnswer}
+                    disabled={!selectedAnswer || isSubmittingAnswer}
                     className="flex-1 rounded-xl bg-gradient-to-r from-[#0876c7] to-[#07549a] px-4 py-3 text-sm font-bold text-white shadow-lg shadow-blue-500/20 transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    Ответить
+                    {isSubmittingAnswer ? "Сохранение..." : "Ответить"}
                   </button>
                 )}
               </div>
@@ -701,10 +866,10 @@ export default function RoundOnePage() {
             </div>
 
             <button
-              onClick={resetProgress}
+              onClick={() => setModalState("none")}
               className="w-full rounded-xl bg-white/10 px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-white/20"
             >
-              Пройти заново
+              Закрыть результаты
             </button>
           </div>
         </div>
