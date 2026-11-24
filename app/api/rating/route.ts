@@ -2,9 +2,25 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
+type RatingResult = {
+  team_id: string;
+  team_name: string;
+  correct_answers: number;
+  total_questions: number;
+};
+
+type RatingTeam = {
+  teamId: string;
+  teamName: string;
+  correctAnswers: number;
+  totalQuestions: number;
+  place: number;
+};
+
 export async function GET() {
   const supabase = await createClient();
 
+  // Проверяем авторизацию
   const {
     data: { user },
     error: authError,
@@ -17,60 +33,53 @@ export async function GET() {
     );
   }
 
-  const { data: teams, error: teamsError } = await supabase
-    .from("teams")
-    .select("id, name");
+  // Получаем публичный рейтинг через RPC
+  const { data, error } = await supabase.rpc(
+    "get_public_rating"
+  );
 
-  if (teamsError) {
+  if (error) {
+    console.error("Rating error:", error);
+
     return NextResponse.json(
-      { error: "Не удалось получить список команд" },
+      { error: "Не удалось получить рейтинг" },
       { status: 500 }
     );
   }
 
-  const { data: results, error: resultsError } = await supabase
-    .from("team_round_results")
-    .select("team_id, correct_answers, total_questions")
-    .eq("round_number", 1);
+  const results = (data ?? []) as RatingResult[];
 
-  if (resultsError) {
-    return NextResponse.json(
-      { error: "Не удалось получить результаты" },
-      { status: 500 }
-    );
-  }
-
-  const rating = teams
-    .map((team) => {
-      const result = results.find(
-        (item) => item.team_id === team.id
-      );
-
-      return {
-        teamId: team.id,
-        teamName: team.name,
-        correctAnswers: result?.correct_answers ?? 0,
-        totalQuestions: result?.total_questions ?? 5,
-      };
-    })
+  // Преобразуем данные для страницы рейтинга
+  const rating = results
+    .map((team): Omit<RatingTeam, "place"> => ({
+      teamId: team.team_id,
+      teamName: team.team_name,
+      correctAnswers: team.correct_answers,
+      totalQuestions: team.total_questions,
+    }))
     .sort(
       (a, b) => b.correctAnswers - a.correctAnswers
     );
 
+  // Определяем места команд
   let currentPlace = 0;
   let previousScore: number | null = null;
 
-  const rankedTeams = rating.map((team, index) => {
-    if (team.correctAnswers !== previousScore) {
-      currentPlace = index + 1;
-      previousScore = team.correctAnswers;
+  const rankedTeams: RatingTeam[] = rating.map(
+    (team, index) => {
+      if (team.correctAnswers !== previousScore) {
+        currentPlace = index + 1;
+        previousScore = team.correctAnswers;
+      }
+
+      return {
+        ...team,
+        place: currentPlace,
+      };
     }
+  );
 
-    return {
-      ...team,
-      place: currentPlace,
-    };
+  return NextResponse.json({
+    rating: rankedTeams,
   });
-
-  return NextResponse.json({ rating: rankedTeams });
 }
