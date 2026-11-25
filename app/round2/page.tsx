@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client"; // Добавлено для логики выхода
 import { zones } from "./zones";
 import { ROUND_SECONDS, computeWaterLevel } from "./constants";
 import Timer from "./components/Timer";
@@ -11,7 +12,7 @@ import MechanismStage from "./components/MechanismStage";
 import DialogueModal from "./components/DialogueModal";
 import TaskModal from "./components/TaskModal";
 import GameStyles from "./components/GameStyles";
-// ВОТ ЗДЕСЬ ИСПРАВЛЕН ПУТЬ: мы идем назад (..), затем в папку round1
+// Путь оставлен как в твоём оригинальном коде. Если файл переехал, поправь его здесь.
 import EndEarlyButton from "../round1/components/EndEarlyButton"; 
 
 type SavedAnswer = {
@@ -40,13 +41,28 @@ export default function RoundTwoPage() {
   const [apiError, setApiError] = useState<string | null>(null);
 
   const [secondsLeft, setSecondsLeft] = useState(ROUND_SECONDS);
+  
   useEffect(() => {
     const id = setInterval(() => {
       setSecondsLeft((s) => (s > 0 ? s - 1 : 0));
     }, 1000);
     return () => clearInterval(id);
   }, []);
+  
   const timeUp = secondsLeft === 0;
+
+  // ЛОГИКА ВЫХОДА ИЗ СИСТЕМЫ (Дисквалификация)
+  // Срабатывает ТОЛЬКО когда время вышло, чтобы НЕ ломать запросы к БД во время игры
+  useEffect(() => {
+    if (timeUp) {
+      const supabase = createClient();
+      async function signOut() {
+        await supabase.auth.signOut();
+        // window.location.href = "/disqualified"; // Раскомментируй, если нужен редирект
+      }
+      void signOut();
+    }
+  }, [timeUp]);
 
   const activeZone = selectedZone !== null ? zones[selectedZone] : null;
 

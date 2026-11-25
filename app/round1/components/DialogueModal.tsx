@@ -26,7 +26,7 @@ export default function DialogueModal({
       : "К карте →";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center pb-8 bg-black/70 backdrop-blur-sm transition-opacity">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="w-full max-w-4xl rounded-2xl border-2 border-[#55A4FE]/40 bg-[#03172c]/95 p-8 shadow-2xl shadow-[#55A4FE]/20 relative">
         <div className="absolute -top-16 left-8 flex h-28 w-28 items-center justify-center rounded-2xl bg-gradient-to-br from-[#0a2342] to-[#10295A] text-6xl shadow-xl border-4 border-[#03172c]">
           {dialogues[dialogueIndex]?.avatar || "👤"}

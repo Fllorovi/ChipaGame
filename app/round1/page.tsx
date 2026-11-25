@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client"; // <-- ДОБАВЛЕН ИМПОРТ SUPABASE
 import { zones } from "./zones";
 import { ROUND_SECONDS, computeWaterLevel } from "./constants";
 import Timer from "./components/Timer";
@@ -10,8 +11,9 @@ import IslandWidget from "./components/IslandWidget";
 import IslandStage from "./components/IslandStage";
 import DialogueModal from "./components/DialogueModal";
 import TaskModal from "./components/TaskModal";
+import ZoneBackground from "./components/ZoneBackground";
 import GameStyles from "./components/GameStyles";
-import EndEarlyButton from "./components/EndEarlyButton"; // <-- Импорт из той же папки
+import EndEarlyButton from "./components/EndEarlyButton";
 
 type SavedAnswer = {
   zone_id: number;
@@ -39,13 +41,29 @@ export default function RoundOnePage() {
   const [apiError, setApiError] = useState<string | null>(null);
 
   const [secondsLeft, setSecondsLeft] = useState(ROUND_SECONDS);
+  
+  // Таймер обратного отсчета
   useEffect(() => {
     const id = setInterval(() => {
       setSecondsLeft((s) => (s > 0 ? s - 1 : 0));
     }, 1000);
     return () => clearInterval(id);
   }, []);
+  
   const timeUp = secondsLeft === 0;
+
+  // <-- ДОБАВЛЕНА ЛОГИКА ВЫХОДА ИЗ СИСТЕМЫ ПРИ ЗАВЕРШЕНИИ ВРЕМЕНИ
+  useEffect(() => {
+    if (timeUp) {
+      const supabase = createClient();
+      async function signOut() {
+        await supabase.auth.signOut();
+        // Опционально: можно добавить редирект на страницу дисквалификации после выхода
+        // window.location.href = "/disqualified";
+      }
+      void signOut();
+    }
+  }, [timeUp]);
 
   const activeZone = selectedZone !== null ? zones[selectedZone] : null;
 
@@ -53,6 +71,14 @@ export default function RoundOnePage() {
     async function loadProgress() {
       try {
         const response = await fetch("/api/round1/progress");
+        
+        const contentType = response.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+          console.warn("API вернул не JSON. Игра запущена без загрузки прошлого прогресса.");
+          setIsLoadingProgress(false);
+          return;
+        }
+
         const data = await response.json();
 
         if (!response.ok) {
@@ -70,7 +96,7 @@ export default function RoundOnePage() {
         setUnlockedZones(unlocked);
         setWaterLevel(computeWaterLevel(completed.length, failed.length));
       } catch (error) {
-        setApiError(error instanceof Error ? error.message : "Ошибка загрузки прогресса");
+        console.error("Ошибка загрузки прогресса:", error);
       } finally {
         setIsLoadingProgress(false);
       }
@@ -79,7 +105,7 @@ export default function RoundOnePage() {
   }, []);
 
   const handleZoneClick = (index: number) => {
-    if (timeUp || isLoadingProgress || apiError || !unlockedZones.includes(index) || completedZones.includes(index) || failedZones.includes(index)) {
+    if (timeUp || isLoadingProgress || !unlockedZones.includes(index) || completedZones.includes(index) || failedZones.includes(index)) {
       return;
     }
 
@@ -205,7 +231,7 @@ export default function RoundOnePage() {
         unlockedZones={unlockedZones}
         completedZones={completedZones}
         failedZones={failedZones}
-        disabled={isLoadingProgress || !!apiError || timeUp}
+        disabled={isLoadingProgress || timeUp}
         onZoneClick={handleZoneClick}
       />
 
@@ -213,6 +239,8 @@ export default function RoundOnePage() {
         <span>ОСТРОВНОЙ КОМПЛЕКС</span>
         <span>СИСТЕМА НАВИГАЦИИ / ONLINE</span>
       </div>
+
+      {activeZone && <ZoneBackground taskId={activeZone.id} />}
 
       {modalState === "dialogue" && activeZone && (
         <DialogueModal

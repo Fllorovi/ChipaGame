@@ -24,8 +24,8 @@ export default function TaskModal({
   onProceed,
 }: Props) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-lg rounded-2xl border border-[#55A4FE]/30 bg-[#03172c] p-6 text-white shadow-2xl shadow-[#55A4FE]/10">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="relative w-full max-w-lg rounded-2xl border border-[#55A4FE]/30 bg-[#03172c] p-6 text-white shadow-2xl shadow-[#55A4FE]/10">
         <div className="mb-4 flex items-center justify-between border-b border-white/10 pb-3">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#69caff]">

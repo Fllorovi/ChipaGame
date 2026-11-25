@@ -1,9 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function EndEarlyButton({ onConfirm }: { onConfirm: () => void }) {
   const [isOpen, setIsOpen] = useState(false);
+  const router = useRouter();
+
+  const handleConfirm = () => {
+    setIsOpen(false);
+    onConfirm(); // сохраняем прогресс (если там есть логика сохранения)
+    router.push("/rating"); // перебрасываем на рейтинг
+  };
 
   return (
     <>
@@ -59,10 +67,7 @@ export default function EndEarlyButton({ onConfirm }: { onConfirm: () => void })
                   Отмена
                 </button>
                 <button
-                  onClick={() => {
-                    setIsOpen(false);
-                    onConfirm();
-                  }}
+                  onClick={handleConfirm}
                   className="flex-1 rounded-xl bg-gradient-to-r from-red-600 to-red-700 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-red-500/20 transition-all hover:-translate-y-0.5 hover:brightness-110"
                 >
                   Завершить
