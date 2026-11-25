@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client"; // Добавлено для логики выхода
+import { createClient } from "@/lib/supabase/client";
 import { zones } from "./zones";
 import { ROUND_SECONDS, computeWaterLevel } from "./constants";
 import Timer from "./components/Timer";
@@ -11,8 +11,8 @@ import MechanismWidget from "./components/MechanismWidget";
 import MechanismStage from "./components/MechanismStage";
 import DialogueModal from "./components/DialogueModal";
 import TaskModal from "./components/TaskModal";
+import ZoneBackground from "./components/ZoneBackground"; // <-- ДОБАВЛЕН ИМПОРТ
 import GameStyles from "./components/GameStyles";
-// Путь оставлен как в твоём оригинальном коде. Если файл переехал, поправь его здесь.
 import EndEarlyButton from "../round1/components/EndEarlyButton"; 
 
 type SavedAnswer = {
@@ -51,14 +51,12 @@ export default function RoundTwoPage() {
   
   const timeUp = secondsLeft === 0;
 
-  // ЛОГИКА ВЫХОДА ИЗ СИСТЕМЫ (Дисквалификация)
-  // Срабатывает ТОЛЬКО когда время вышло, чтобы НЕ ломать запросы к БД во время игры
   useEffect(() => {
     if (timeUp) {
       const supabase = createClient();
       async function signOut() {
         await supabase.auth.signOut();
-        // window.location.href = "/disqualified"; // Раскомментируй, если нужен редирект
+        // window.location.href = "/disqualified";
       }
       void signOut();
     }
@@ -236,6 +234,9 @@ export default function RoundTwoPage() {
         <span>МЕХАНИЧЕСКОЕ ЯДРО</span>
         <span>СИСТЕМА СТАБИЛИЗАЦИИ / ONLINE</span>
       </div>
+
+      {/* Вот он, наш фон! */}
+      {activeZone && <ZoneBackground taskId={activeZone.id} />}
 
       {modalState === "dialogue" && activeZone && (
         <DialogueModal

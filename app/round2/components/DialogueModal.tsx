@@ -25,38 +25,57 @@ export default function DialogueModal({
       ? "Слушать испытание →"
       : "К карте →";
 
+  const avatar = dialogues[dialogueIndex]?.avatar;
+  const speaker = dialogues[dialogueIndex]?.speaker || "Неизвестно";
+  const text = dialogues[dialogueIndex]?.text || "...";
+
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center pb-8 bg-black/70 backdrop-blur-sm transition-opacity">
-      <div className="w-full max-w-4xl rounded-2xl border-2 border-[#55A4FE]/40 bg-[#03172c]/95 p-8 shadow-2xl shadow-[#55A4FE]/20 relative">
-        <div className="absolute -top-16 left-8 flex h-28 w-28 items-center justify-center rounded-2xl bg-gradient-to-br from-[#0a2342] to-[#10295A] text-6xl shadow-xl border-4 border-[#03172c]">
-          {dialogues[dialogueIndex]?.avatar || "👤"}
+    <div className="fixed inset-0 z-50 flex items-end justify-center p-4">
+      <div className="w-full max-w-5xl rounded-2xl border-2 border-[#55A4FE]/40 bg-[#03172c]/95 p-8 shadow-2xl shadow-[#55A4FE]/20 relative overflow-hidden">
+        
+        {/* Картинка персонажа слева в рамке */}
+        <div className="absolute left-6 top-6 bottom-6 w-44 pointer-events-none">
+          <div className="h-full w-full rounded-xl border-2 border-[#55A4FE]/50 bg-[#0a2342]/60 shadow-lg shadow-[#55A4FE]/20 overflow-hidden">
+            {avatar ? (
+              <img
+                src={avatar}
+                alt={speaker}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center text-6xl">
+                👤
+              </div>
+            )}
+          </div>
         </div>
 
-        <div className="mt-6">
-          <div className="mb-2 inline-block rounded-md bg-[#55A4FE]/20 px-3 py-1">
+        {/* Текст и футер — с отступом слева, чтобы не наезжать на картинку */}
+        <div className="pl-52">
+          <div className="mb-3 inline-block rounded-md bg-[#55A4FE]/20 px-3 py-1">
             <p className="text-sm font-black uppercase tracking-widest text-[#69caff]">
-              {dialogues[dialogueIndex]?.speaker || "Неизвестно"}
+              {speaker}
             </p>
           </div>
           <p className="text-xl leading-relaxed text-white/90 min-h-[100px]">
-            {dialogues[dialogueIndex]?.text || "..."}
+            {text}
           </p>
-        </div>
 
-        <div className="mt-6 flex justify-between items-center border-t border-white/10 pt-4">
-          <span className="text-xs text-white/30">
-            {dialoguePhase === "intro"
-              ? "Вводная часть"
-              : answerStatus === "correct"
-                ? "Успешное прохождение"
-                : "Провал испытания"}
-          </span>
-          <button
-            onClick={onNext}
-            className="rounded-xl bg-[#55A4FE] px-8 py-3 text-sm font-bold text-[#03172c] transition-colors hover:bg-white"
-          >
-            {buttonLabel}
-          </button>
+          <div className="mt-6 flex justify-between items-center border-t border-white/10 pt-4">
+            <span className="text-xs text-white/30">
+              {dialoguePhase === "intro"
+                ? "Вводная часть"
+                : answerStatus === "correct"
+                  ? "Успешное прохождение"
+                  : "Провал испытания"}
+            </span>
+            <button
+              onClick={onNext}
+              className="rounded-xl bg-[#55A4FE] px-8 py-3 text-sm font-bold text-[#03172c] transition-colors hover:bg-white"
+            >
+              {buttonLabel}
+            </button>
+          </div>
         </div>
       </div>
     </div>
