@@ -15,46 +15,70 @@ export default function LoginPage() {
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  
+async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  event.preventDefault();
 
-    const form = event.currentTarget;
-    setMessage("");
-    setIsLoading(true);
+  const form = event.currentTarget;
+  setMessage("");
+  setIsLoading(true);
 
-    const formData = new FormData(form);
+  const formData = new FormData(form);
 
-    const email = String(formData.get("email") ?? "").trim();
-    const password = String(formData.get("password") ?? "");
+  const email = String(formData.get("email") ?? "").trim();
+  const password = String(formData.get("password") ?? "");
 
-    const supabase = createClient();
+  const supabase = createClient();
 
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
-      if (error) {
-        throw new Error("Неверная почта или пароль.");
-      }
-
-      if (data.session) {
-        router.push("/lobby");
-        router.refresh();
-      }
-    } catch (error) {
-      console.error("Login error:", error);
-
-      setMessage(
-        error instanceof Error
-          ? error.message
-          : "Не удалось войти. Попробуйте ещё раз."
-      );
-    } finally {
-      setIsLoading(false);
+    if (error) {
+      throw new Error("Неверная почта или пароль.");
     }
+
+    if (data.user) {
+      const { data: team, error: teamError } = await supabase
+        .from("teams")
+        .select("is_disqualified")
+        .eq("id", data.user.id)
+        .maybeSingle();
+
+      if (teamError) {
+        await supabase.auth.signOut();
+        throw new Error("Не удалось проверить статус команды.");
+      }
+
+      if (!team) {
+        await supabase.auth.signOut();
+        throw new Error("Аккаунт команды не найден.");
+      }
+
+      if (team.is_disqualified) {
+        await supabase.auth.signOut();
+        router.replace("/disqualified");
+        return;
+      }
+
+      router.push("/lobby");
+      router.refresh();
+    }
+  } catch (error) {
+    console.error("Login error:", error);
+
+    setMessage(
+      error instanceof Error
+        ? error.message
+        : "Не удалось войти. Попробуйте ещё раз."
+    );
+  } finally {
+    setIsLoading(false);
   }
+}
+
 
   return (
     <>
