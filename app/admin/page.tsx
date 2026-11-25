@@ -142,13 +142,13 @@ export default function AdminPage() {
 
     if (launchError) {
       console.error("Game launch error:", launchError);
-      setError("Не удалось запустить игру.");
+      setError("Не удалось запустить первый тур.");
       setIsLaunching(false);
       return;
     }
 
     if (!data) {
-      setError("Игра уже запускается или её состояние изменилось.");
+      setError("Первый тур уже запускается или его состояние изменилось.");
       setIsLaunching(false);
       return;
     }
@@ -177,10 +177,10 @@ export default function AdminPage() {
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_45%,#123968_0%,#091E40_45%,#020619_100%)]" />
 
           <div className="absolute -left-32 top-[10%] h-80 w-80 animate-pulse rounded-full bg-[#A51E50]/25 blur-[100px]" />
-          <div className="absolute right-[-100px] top-[25%] h-96 w-96 animate-pulse rounded-full bg-[#C52B62]/30 blur-[110px] [animation-delay:500ms]" />
-          <div className="absolute left-[35%] top-[60%] h-80 w-80 animate-pulse rounded-full bg-[#8F1748]/30 blur-[100px] [animation-delay:1000ms]" />
-          <div className="absolute bottom-[-120px] right-[10%] h-96 w-96 animate-pulse rounded-full bg-[#D43A70]/25 blur-[110px] [animation-delay:700ms]" />
-          <div className="absolute bottom-[5%] left-[5%] h-72 w-72 animate-pulse rounded-full bg-[#A51E50]/25 blur-[100px] [animation-delay:1300ms]" />
+          <div className="absolute right-[-100px] top-[25%] h-96 w-96 animate-pulse rounded-full bg-[#C52B62]/30 blur-[110px]" />
+          <div className="absolute left-[35%] top-[60%] h-80 w-80 animate-pulse rounded-full bg-[#8F1748]/30 blur-[100px]" />
+          <div className="absolute bottom-[-120px] right-[10%] h-96 w-96 animate-pulse rounded-full bg-[#D43A70]/25 blur-[110px]" />
+          <div className="absolute bottom-[5%] left-[5%] h-72 w-72 animate-pulse rounded-full bg-[#A51E50]/25 blur-[100px]" />
         </div>
 
         <div className="relative z-10 mx-auto max-w-7xl">
@@ -209,6 +209,13 @@ export default function AdminPage() {
               Управление игрой
             </span>
 
+            <Link
+              href="/admin/teams"
+              className="rounded-lg border border-white/10 bg-white/[0.04] px-4 py-2 text-sm font-semibold text-white/60 transition-colors hover:border-[#55A4FE]/30 hover:bg-[#55A4FE]/10 hover:text-white"
+            >
+              Управление командами
+            </Link>
+
             <span className="cursor-not-allowed rounded-lg border border-white/10 bg-white/[0.04] px-4 py-2 text-sm font-semibold text-white/30">
               Настройка туров · Скоро
             </span>
@@ -221,17 +228,20 @@ export default function AdminPage() {
             </Link>
           </nav>
 
-          {/* Основной блок */}
-          <div className="mx-auto max-w-4xl">
-            <section className="overflow-hidden rounded-3xl border border-[#55A4FE]/20 bg-[#0B1B4D]/80 shadow-[0_15px_50px_rgba(0,0,0,0.2)] backdrop-blur-xl">
+          {/* Блоки управления турами */}
+          <div className="mx-auto grid max-w-7xl grid-cols-1 items-stretch gap-6 lg:grid-cols-2">
+            {/* Первый тур */}
+            <section className="flex flex-col overflow-hidden rounded-3xl border border-[#55A4FE]/20 bg-[#0B1B4D]/80 shadow-[0_15px_50px_rgba(0,0,0,0.2)] backdrop-blur-xl">
               <div className="border-b border-white/10 px-6 py-5 sm:px-7">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs font-black uppercase tracking-[0.25em] text-[#55A4FE]">
-                      Control panel
+                      First round
                     </p>
 
-                    <h2 className="mt-1 text-2xl font-black">Игра</h2>
+                    <h2 className="mt-1 text-2xl font-black">
+                      Первый тур
+                    </h2>
                   </div>
 
                   <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#55A4FE]/10 text-[#55A4FE]">
@@ -249,11 +259,11 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              <div className="space-y-5 p-6 sm:p-7">
-                {/* Состояние игры */}
+              <div className="flex flex-1 flex-col space-y-5 p-6 sm:p-7">
+                {/* Состояние первого тура */}
                 <div className="rounded-2xl border border-[#55A4FE]/15 bg-[#10295A]/80 p-5">
                   <p className="text-xs font-bold uppercase tracking-[0.2em] text-white/45">
-                    Состояние игры
+                    Состояние первого тура
                   </p>
 
                   <div className="mt-3 flex items-center gap-3">
@@ -278,8 +288,8 @@ export default function AdminPage() {
 
                   <p className="mt-2 text-sm text-white/50">
                     {isGameStarting
-                      ? "Запуск игры уже начат."
-                      : "Игра ожидает команды администратора."}
+                      ? "Запуск первого тура уже начат."
+                      : "Первый тур ожидает команды администратора."}
                   </p>
                 </div>
 
@@ -291,7 +301,9 @@ export default function AdminPage() {
                     className="flex w-full items-center justify-between px-5 py-4 text-left transition-colors hover:bg-[#55A4FE]/10"
                   >
                     <div>
-                      <p className="font-bold text-white">Список команд</p>
+                      <p className="font-bold text-white">
+                        Список команд
+                      </p>
 
                       <p className="mt-1 text-xs text-white/45">
                         Зарегистрировано: {teams.length}
@@ -340,15 +352,14 @@ export default function AdminPage() {
                   )}
                 </div>
 
-                {/* Ошибка */}
                 {error && (
                   <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm font-medium text-red-400">
                     {error}
                   </div>
                 )}
 
-                {/* Запуск игры */}
-                <div className="border-t border-white/10 pt-5">
+                {/* Запуск первого тура */}
+                <div className="mt-auto border-t border-white/10 pt-5">
                   <button
                     type="button"
                     onClick={handleLaunchGame}
@@ -358,14 +369,99 @@ export default function AdminPage() {
                     {isLaunching
                       ? "Запуск..."
                       : isGameStarting
-                        ? "Игра запускается"
-                        : "ЗАПУСТИТЬ ИГРУ"}
+                        ? "Первый тур запускается"
+                        : "ЗАПУСТИТЬ ПЕРВЫЙ ТУР"}
                   </button>
 
                   <p className="mt-3 text-center text-xs text-white/35">
                     {isGameStarting
                       ? "Повторный запуск недоступен."
-                      : "После запуска все участники получат уведомление."}
+                      : "После запуска участники получат уведомление."}
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            {/* Второй тур */}
+            <section className="flex flex-col overflow-hidden rounded-3xl border border-[#55A4FE]/20 bg-[#0B1B4D]/80 shadow-[0_15px_50px_rgba(0,0,0,0.2)] backdrop-blur-xl">
+              <div className="border-b border-white/10 px-6 py-5 sm:px-7">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-[0.25em] text-[#55A4FE]">
+                      Second round
+                    </p>
+
+                    <h2 className="mt-1 text-2xl font-black">
+                      Второй тур
+                    </h2>
+                  </div>
+
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#55A4FE]/10 text-[#55A4FE]">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      className="h-6 w-6"
+                    >
+                      <path d="M8 5v14l11-7z" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-1 flex-col space-y-5 p-6 sm:p-7">
+                {/* Состояние второго тура */}
+                <div className="rounded-2xl border border-[#55A4FE]/15 bg-[#10295A]/80 p-5">
+                  <p className="text-xs font-bold uppercase tracking-[0.2em] text-white/45">
+                    Состояние второго тура
+                  </p>
+
+                  <div className="mt-3 flex items-center gap-3">
+                    <span className="h-3 w-3 rounded-full bg-white/30" />
+
+                    <p className="text-2xl font-black text-white/60">
+                      Ожидание допуска
+                    </p>
+                  </div>
+
+                  <p className="mt-2 text-sm text-white/50">
+                    Запуск станет доступен после завершения первого тура и формирования списка допущенных команд.
+                  </p>
+                </div>
+
+                {/* Допуск команд */}
+                <div className="rounded-2xl border border-[#55A4FE]/15 bg-[#10295A]/70 p-5">
+                  <p className="font-bold text-white">
+                    Допущенные команды
+                  </p>
+
+                  <p className="mt-2 text-sm text-white/45">
+                    Список и количество участников второго тура будут доступны после настройки отбора команд.
+                  </p>
+
+                  <Link
+                    href="/admin/teams"
+                    className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-[#55A4FE] transition-colors hover:text-white"
+                  >
+                    Перейти к управлению командами
+                    <span aria-hidden="true">→</span>
+                  </Link>
+                </div>
+
+                {/* Запуск второго тура */}
+                <div className="mt-auto border-t border-white/10 pt-5">
+                  <button
+                    type="button"
+                    disabled
+                    className="w-full cursor-not-allowed rounded-xl bg-[#0084FF]/40 px-7 py-4 text-base font-bold text-white/50"
+                  >
+                    ЗАПУСТИТЬ ВТОРОЙ ТУР
+                  </button>
+
+                  <p className="mt-3 text-center text-xs text-white/35">
+                    Сначала завершите первый тур и определите список участников второго тура.
                   </p>
                 </div>
               </div>

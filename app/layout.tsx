@@ -1,5 +1,7 @@
+
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import DisqualificationGuard from "@/components/auth/DisqualificationGuard";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -15,7 +17,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ru">
-      <body>{children}</body>
+      <body>
+        <DisqualificationGuard />
+        {children}
+      </body>
     </html>
   );
 }
