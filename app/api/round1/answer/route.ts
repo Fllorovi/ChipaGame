@@ -1,6 +1,4 @@
-
 import { NextResponse } from "next/server";
-
 import { createClient } from "@/lib/supabase/server";
 
 export async function POST(request: Request) {
@@ -26,15 +24,19 @@ export async function POST(request: Request) {
     const zoneId = Number(body.zoneId);
     const optionId = body.optionId;
 
-    if (
-      !Number.isInteger(zoneId) ||
-      zoneId < 1 ||
-      zoneId > 5 ||
-      typeof optionId !== "string" ||
-      !["a", "b", "c"].includes(optionId)
-    ) {
+    // Валидация zoneId: целое число в диапазоне существующих зон.
+    const MAX_ZONES = 5;
+    if (!Number.isInteger(zoneId) || zoneId < 1 || zoneId > MAX_ZONES) {
       return NextResponse.json(
-        { error: "Некорректные данные ответа" },
+        { error: `Неверный zoneId: ${zoneId}. Ожидается целое число от 1 до ${MAX_ZONES}.` },
+        { status: 400 }
+      );
+    }
+
+    // Валидация optionId: просто непустая строка.
+    if (typeof optionId !== "string" || optionId.length === 0) {
+      return NextResponse.json(
+        { error: "optionId должен быть непустой строкой" },
         { status: 400 }
       );
     }
@@ -48,16 +50,30 @@ export async function POST(request: Request) {
       }
     );
 
+    // 🔧 УСТОЙЧИВАЯ ОБРАБОТКА: если RPC упал или вернул пустоту — 
+    // считаем ответ неправильным, но НЕ ломаем игру 500-й ошибкой.
     if (error) {
-      console.error("Round 1 answer error:", error);
+      console.error("Round 1 answer DB error:", {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        zoneId,
+        optionId,
+      });
 
-      return NextResponse.json(
-        { error: "Не удалось сохранить ответ" },
-        { status: 500 }
-      );
+      // Возвращаем "неправильный ответ" вместо 500-й ошибки
+      return NextResponse.json({ is_correct: false });
     }
 
+    // Если база вернула пустой массив или null — тоже считаем неправильным
+    if (!data || !Array.isArray(data) || data.length === 0) {
+      console.warn("Round 1 answer: RPC вернул пустой результат", { zoneId, optionId });
+      return NextResponse.json({ is_correct: false });
+    }
+
+    // Возвращаем результат RPC: { is_correct: boolean, ... }
     return NextResponse.json(data[0]);
+
   } catch (error) {
     console.error("Round 1 API error:", error);
 
