@@ -11,6 +11,7 @@ import IslandStage from "./components/IslandStage";
 import DialogueModal from "./components/DialogueModal";
 import TaskModal from "./components/TaskModal";
 import GameStyles from "./components/GameStyles";
+import EndEarlyButton from "./components/EndEarlyButton"; // <-- Импорт из той же папки
 
 type SavedAnswer = {
   zone_id: number;
@@ -37,7 +38,6 @@ export default function RoundOnePage() {
   const [isSubmittingAnswer, setIsSubmittingAnswer] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
 
-  // Таймер раунда: 1,5 часа
   const [secondsLeft, setSecondsLeft] = useState(ROUND_SECONDS);
   useEffect(() => {
     const id = setInterval(() => {
@@ -49,7 +49,6 @@ export default function RoundOnePage() {
 
   const activeZone = selectedZone !== null ? zones[selectedZone] : null;
 
-  // Загружаем сохранённый прогресс команды
   useEffect(() => {
     async function loadProgress() {
       try {
@@ -62,51 +61,25 @@ export default function RoundOnePage() {
 
         const answers: SavedAnswer[] = data.answers ?? [];
 
-        const completed = answers
-          .filter((answer) => answer.is_correct)
-          .map((answer) => answer.zone_id - 1);
-
-        const failed = answers
-          .filter((answer) => !answer.is_correct)
-          .map((answer) => answer.zone_id - 1);
-
-        const unlocked = Array.from(
-          new Set([
-            0,
-            ...answers
-              .map((answer) => answer.zone_id)
-              .filter((zoneId) => zoneId < zones.length),
-          ])
-        );
+        const completed = answers.filter((answer) => answer.is_correct).map((answer) => answer.zone_id - 1);
+        const failed = answers.filter((answer) => !answer.is_correct).map((answer) => answer.zone_id - 1);
+        const unlocked = Array.from(new Set([0, ...answers.map((answer) => answer.zone_id).filter((zoneId) => zoneId < zones.length)]));
 
         setCompletedZones(completed);
         setFailedZones(failed);
         setUnlockedZones(unlocked);
-
         setWaterLevel(computeWaterLevel(completed.length, failed.length));
       } catch (error) {
-        setApiError(
-          error instanceof Error
-            ? error.message
-            : "Ошибка загрузки прогресса"
-        );
+        setApiError(error instanceof Error ? error.message : "Ошибка загрузки прогресса");
       } finally {
         setIsLoadingProgress(false);
       }
     }
-
     loadProgress();
   }, []);
 
   const handleZoneClick = (index: number) => {
-    if (
-      timeUp ||
-      isLoadingProgress ||
-      apiError ||
-      !unlockedZones.includes(index) ||
-      completedZones.includes(index) ||
-      failedZones.includes(index)
-    ) {
+    if (timeUp || isLoadingProgress || apiError || !unlockedZones.includes(index) || completedZones.includes(index) || failedZones.includes(index)) {
       return;
     }
 
@@ -121,14 +94,8 @@ export default function RoundOnePage() {
 
   const getDialoguesForPhase = () => {
     if (!activeZone) return [];
-
-    if (dialoguePhase === "intro") {
-      return activeZone.dialogues;
-    }
-
-    return answerStatus === "correct"
-      ? activeZone.successDialogues
-      : activeZone.failureDialogues;
+    if (dialoguePhase === "intro") return activeZone.dialogues;
+    return answerStatus === "correct" ? activeZone.successDialogues : activeZone.failureDialogues;
   };
 
   const handleNextDialogue = () => {
@@ -141,12 +108,10 @@ export default function RoundOnePage() {
     }
 
     if (dialoguePhase === "intro") {
-      // Вводная сцена закончилась → сразу включаем задание
       setModalState("task");
       setSelectedAnswer(null);
       setAnswerStatus("idle");
     } else {
-      // Финальный диалог (успех/провал) закончился → возвращаемся к карте
       setModalState("none");
       setSelectedZone(null);
       setSelectedAnswer(null);
@@ -156,22 +121,12 @@ export default function RoundOnePage() {
 
   const handleSelectAnswer = (optionId: string) => {
     if (answerStatus !== "idle" || isSubmittingAnswer) return;
-
     setSelectedAnswer(optionId);
     setApiError(null);
   };
 
-  // Отправляем ответ на сервер.
-  // Правильность ответа определяется только функцией Supabase.
   const handleCheckAnswer = async () => {
-    if (
-      !selectedAnswer ||
-      !activeZone ||
-      selectedZone === null ||
-      isSubmittingAnswer
-    ) {
-      return;
-    }
+    if (!selectedAnswer || !activeZone || selectedZone === null || isSubmittingAnswer) return;
 
     setIsSubmittingAnswer(true);
     setApiError(null);
@@ -179,76 +134,54 @@ export default function RoundOnePage() {
     try {
       const response = await fetch("/api/round1/answer", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          zoneId: activeZone.id,
-          optionId: selectedAnswer,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ zoneId: activeZone.id, optionId: selectedAnswer }),
       });
 
       const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error ?? "Не удалось сохранить ответ");
-      }
+      if (!response.ok) throw new Error(data.error ?? "Не удалось сохранить ответ");
 
       const isCorrect = data.is_correct;
-
       setAnswerStatus(isCorrect ? "correct" : "wrong");
 
-      const nextCompleted = isCorrect
-        ? Array.from(new Set([...completedZones, selectedZone]))
-        : completedZones;
-
-      const nextFailed = !isCorrect
-        ? Array.from(new Set([...failedZones, selectedZone]))
-        : failedZones;
+      const nextCompleted = isCorrect ? Array.from(new Set([...completedZones, selectedZone])) : completedZones;
+      const nextFailed = !isCorrect ? Array.from(new Set([...failedZones, selectedZone])) : failedZones;
 
       setCompletedZones(nextCompleted);
       setFailedZones(nextFailed);
-
       setWaterLevel(computeWaterLevel(nextCompleted.length, nextFailed.length));
 
-      // Открываем следующую зону после сохранения ответа на сервере
       const nextIndex = selectedZone + 1;
-
       if (nextIndex < zones.length) {
-        setUnlockedZones((prev) =>
-          prev.includes(nextIndex) ? prev : [...prev, nextIndex]
-        );
+        setUnlockedZones((prev) => prev.includes(nextIndex) ? prev : [...prev, nextIndex]);
       }
     } catch (error) {
-      setApiError(
-        error instanceof Error
-          ? error.message
-          : "Не удалось отправить ответ"
-      );
+      setApiError(error instanceof Error ? error.message : "Не удалось отправить ответ");
     } finally {
       setIsSubmittingAnswer(false);
     }
   };
 
   const handleProceedAfterAnswer = () => {
-    // После ответа сразу переходим к финальному диалогу (успех/провал),
-    // без промежуточных реакций.
     setDialoguePhase("post");
     setModalState("dialogue");
     setDialogueIndex(0);
+  };
+
+  const handleEndEarly = () => {
+    setSecondsLeft(0); 
   };
 
   const currentDialogues = getDialoguesForPhase();
 
   return (
     <main className="island-map">
-      {/* Загрузка прогресса */}
+      <EndEarlyButton onConfirm={handleEndEarly} />
+
       {isLoadingProgress && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#03172c]">
           <div className="text-center">
-            <div className="mb-4 text-lg font-bold text-[#69caff]">
-              Загрузка игрового прогресса...
-            </div>
+            <div className="mb-4 text-lg font-bold text-[#69caff]">Загрузка игрового прогресса...</div>
             <div className="mx-auto h-2 w-48 overflow-hidden rounded-full bg-white/10">
               <div className="h-full w-1/2 animate-pulse rounded-full bg-[#55A4FE]" />
             </div>
@@ -256,26 +189,17 @@ export default function RoundOnePage() {
         </div>
       )}
 
-      {/* Ошибка загрузки или сохранения */}
       {apiError && (
         <div className="fixed left-1/2 top-5 z-[90] w-[calc(100%-32px)] max-w-xl -translate-x-1/2 rounded-xl border border-red-500/40 bg-red-950/95 px-5 py-3 text-center text-sm text-red-200 shadow-xl">
           {apiError}
         </div>
       )}
 
-      {/* Таймер — виден всегда, поверх модалок */}
       <Timer secondsLeft={secondsLeft} />
-
-      {/* Прогресс */}
       <ProgressBar completed={completedZones.length} total={zones.length} />
-
-      {/* Виджет острова */}
       <IslandWidget waterLevel={waterLevel} />
-
-      {/* Океан (фон карты) */}
       <OceanBackground />
 
-      {/* Карта острова */}
       <IslandStage
         zones={zones}
         unlockedZones={unlockedZones}
@@ -290,7 +214,6 @@ export default function RoundOnePage() {
         <span>СИСТЕМА НАВИГАЦИИ / ONLINE</span>
       </div>
 
-      {/* Диалоги */}
       {modalState === "dialogue" && activeZone && (
         <DialogueModal
           dialogues={currentDialogues}
@@ -301,7 +224,6 @@ export default function RoundOnePage() {
         />
       )}
 
-      {/* Задание */}
       {modalState === "task" && activeZone && (
         <TaskModal
           task={activeZone.task}
