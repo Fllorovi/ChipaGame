@@ -11,7 +11,7 @@ export default function Timer({ secondsLeft }: { secondsLeft: number }) {
   const pct = (secondsLeft / ROUND_SECONDS) * 100;
 
   return (
-    <div className="absolute top-8 left-8 z-[60] flex flex-col gap-1 rounded-xl border-2 border-[#55A4FE]/40 bg-[#03172c]/90 px-4 py-2.5 shadow-[0_0_20px_rgba(0,0,0,0.7)] backdrop-blur-md">
+    <div className="absolute top-4 left-8 z-[60] flex flex-col gap-1 rounded-xl border-2 border-[#55A4FE]/40 bg-[#03172c]/90 px-4 py-2.5 shadow-[0_0_20px_rgba(0,0,0,0.7)] backdrop-blur-md">
       <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-[#69caff]/70">
         До конца раунда
       </span>
