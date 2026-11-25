@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { zones } from "./zones";
+import { tasks } from "./tasks"; // <-- Импорт заданий
 import { ROUND_SECONDS, computeWaterLevel } from "./constants";
 import Timer from "./components/Timer";
 import ProgressBar from "./components/ProgressBar";
@@ -11,7 +12,7 @@ import MechanismWidget from "./components/MechanismWidget";
 import MechanismStage from "./components/MechanismStage";
 import DialogueModal from "./components/DialogueModal";
 import TaskModal from "./components/TaskModal";
-import ZoneBackground from "./components/ZoneBackground"; // <-- ДОБАВЛЕН ИМПОРТ
+import ZoneBackground from "./components/ZoneBackground";
 import GameStyles from "./components/GameStyles";
 import EndEarlyButton from "../round1/components/EndEarlyButton"; 
 
@@ -31,7 +32,6 @@ export default function RoundTwoPage() {
   const [dialoguePhase, setDialoguePhase] = useState<"intro" | "post">("intro");
   const [dialogueIndex, setDialogueIndex] = useState(0);
 
-  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [answerStatus, setAnswerStatus] = useState<"idle" | "wrong" | "correct">("idle");
 
   const [waterLevel, setWaterLevel] = useState(computeWaterLevel(0, 0));
@@ -56,7 +56,6 @@ export default function RoundTwoPage() {
       const supabase = createClient();
       async function signOut() {
         await supabase.auth.signOut();
-        // window.location.href = "/disqualified";
       }
       void signOut();
     }
@@ -100,7 +99,6 @@ export default function RoundTwoPage() {
     setDialoguePhase("intro");
     setModalState("dialogue");
     setDialogueIndex(0);
-    setSelectedAnswer(null);
     setAnswerStatus("idle");
     setApiError(null);
   };
@@ -122,40 +120,36 @@ export default function RoundTwoPage() {
 
     if (dialoguePhase === "intro") {
       setModalState("task");
-      setSelectedAnswer(null);
       setAnswerStatus("idle");
     } else {
       setModalState("none");
       setSelectedZone(null);
-      setSelectedAnswer(null);
       setAnswerStatus("idle");
     }
   };
 
-  const handleSelectAnswer = (optionId: string) => {
-    if (answerStatus !== "idle" || isSubmittingAnswer) return;
-    setSelectedAnswer(optionId);
-    setApiError(null);
-  };
-
-  const handleCheckAnswer = async () => {
-    if (!selectedAnswer || !activeZone || selectedZone === null || isSubmittingAnswer) return;
+  // Новая логика проверки
+  const handleCheckAnswer = async (answers: Record<string, string>) => {
+    if (!activeZone || selectedZone === null || isSubmittingAnswer) return;
 
     setIsSubmittingAnswer(true);
     setApiError(null);
 
     try {
-      const response = await fetch("/api/round2/answer", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ zoneId: activeZone.id, optionId: selectedAnswer }),
-      });
-
-      if (!response.ok) throw new Error("Ошибка сервера");
-
-      const data = await response.json();
-      const isCorrect = data.is_correct;
+      const taskDef = tasks[activeZone.id];
+      let allCorrect = true;
       
+      for (const input of taskDef.inputs) {
+        const userAnswer = (answers[input.id] || "").trim().toUpperCase();
+        const correctAnswer = input.correctAnswer.toUpperCase();
+        
+        if (userAnswer !== correctAnswer) {
+          allCorrect = false;
+          break;
+        }
+      }
+
+      const isCorrect = allCorrect;
       setAnswerStatus(isCorrect ? "correct" : "wrong");
 
       const nextCompleted = isCorrect ? Array.from(new Set([...completedZones, selectedZone])) : completedZones;
@@ -170,14 +164,7 @@ export default function RoundTwoPage() {
         setUnlockedZones((prev) => prev.includes(nextIndex) ? prev : [...prev, nextIndex]);
       }
     } catch (error) {
-      console.warn("Ошибка при отправке ответа (сохраняем локально):", error);
-      setAnswerStatus("correct");
-      setCompletedZones((prev) => [...prev, selectedZone]);
-      
-      const nextIndex = selectedZone + 1;
-      if (nextIndex < zones.length) {
-        setUnlockedZones((prev) => prev.includes(nextIndex) ? prev : [...prev, nextIndex]);
-      }
+      setApiError("Ошибка при проверке ответов");
     } finally {
       setIsSubmittingAnswer(false);
     }
@@ -235,7 +222,6 @@ export default function RoundTwoPage() {
         <span>СИСТЕМА СТАБИЛИЗАЦИИ / ONLINE</span>
       </div>
 
-      {/* Вот он, наш фон! */}
       {activeZone && <ZoneBackground taskId={activeZone.id} />}
 
       {modalState === "dialogue" && activeZone && (
@@ -251,11 +237,9 @@ export default function RoundTwoPage() {
       {modalState === "task" && activeZone && (
         <TaskModal
           task={activeZone.task}
-          selectedAnswer={selectedAnswer}
           answerStatus={answerStatus}
           isSubmitting={isSubmittingAnswer}
           apiError={apiError}
-          onSelect={handleSelectAnswer}
           onCheck={handleCheckAnswer}
           onProceed={handleProceedAfterAnswer}
         />

@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client"; // <-- ДОБАВЛЕН ИМПОРТ SUPABASE
+import { createClient } from "@/lib/supabase/client";
 import { zones } from "./zones";
+import { tasks } from "./tasks"; // <-- ДОБАВЛЕН ИМПОРТ ЗАДАНИЙ
 import { ROUND_SECONDS, computeWaterLevel } from "./constants";
 import Timer from "./components/Timer";
 import ProgressBar from "./components/ProgressBar";
@@ -31,7 +32,7 @@ export default function RoundOnePage() {
   const [dialoguePhase, setDialoguePhase] = useState<"intro" | "post">("intro");
   const [dialogueIndex, setDialogueIndex] = useState(0);
 
-  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+  // Убрали selectedAnswer
   const [answerStatus, setAnswerStatus] = useState<"idle" | "wrong" | "correct">("idle");
 
   const [waterLevel, setWaterLevel] = useState(computeWaterLevel(0, 0));
@@ -42,7 +43,6 @@ export default function RoundOnePage() {
 
   const [secondsLeft, setSecondsLeft] = useState(ROUND_SECONDS);
   
-  // Таймер обратного отсчета
   useEffect(() => {
     const id = setInterval(() => {
       setSecondsLeft((s) => (s > 0 ? s - 1 : 0));
@@ -52,14 +52,11 @@ export default function RoundOnePage() {
   
   const timeUp = secondsLeft === 0;
 
-  // <-- ДОБАВЛЕНА ЛОГИКА ВЫХОДА ИЗ СИСТЕМЫ ПРИ ЗАВЕРШЕНИИ ВРЕМЕНИ
   useEffect(() => {
     if (timeUp) {
       const supabase = createClient();
       async function signOut() {
         await supabase.auth.signOut();
-        // Опционально: можно добавить редирект на страницу дисквалификации после выхода
-        // window.location.href = "/disqualified";
       }
       void signOut();
     }
@@ -113,7 +110,6 @@ export default function RoundOnePage() {
     setDialoguePhase("intro");
     setModalState("dialogue");
     setDialogueIndex(0);
-    setSelectedAnswer(null);
     setAnswerStatus("idle");
     setApiError(null);
   };
@@ -135,39 +131,36 @@ export default function RoundOnePage() {
 
     if (dialoguePhase === "intro") {
       setModalState("task");
-      setSelectedAnswer(null);
       setAnswerStatus("idle");
     } else {
       setModalState("none");
       setSelectedZone(null);
-      setSelectedAnswer(null);
       setAnswerStatus("idle");
     }
   };
 
-  const handleSelectAnswer = (optionId: string) => {
-    if (answerStatus !== "idle" || isSubmittingAnswer) return;
-    setSelectedAnswer(optionId);
-    setApiError(null);
-  };
-
-  const handleCheckAnswer = async () => {
-    if (!selectedAnswer || !activeZone || selectedZone === null || isSubmittingAnswer) return;
+  // Логика проверки ответов
+  const handleCheckAnswer = async (answers: Record<string, string>) => {
+    if (!activeZone || selectedZone === null || isSubmittingAnswer) return;
 
     setIsSubmittingAnswer(true);
     setApiError(null);
 
     try {
-      const response = await fetch("/api/round1/answer", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ zoneId: activeZone.id, optionId: selectedAnswer }),
-      });
+      const taskDef = tasks[activeZone.id];
+      let allCorrect = true;
+      
+      for (const input of taskDef.inputs) {
+        const userAnswer = (answers[input.id] || "").trim().toUpperCase();
+        const correctAnswer = input.correctAnswer.toUpperCase();
+        
+        if (userAnswer !== correctAnswer) {
+          allCorrect = false;
+          break;
+        }
+      }
 
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error ?? "Не удалось сохранить ответ");
-
-      const isCorrect = data.is_correct;
+      const isCorrect = allCorrect;
       setAnswerStatus(isCorrect ? "correct" : "wrong");
 
       const nextCompleted = isCorrect ? Array.from(new Set([...completedZones, selectedZone])) : completedZones;
@@ -182,7 +175,7 @@ export default function RoundOnePage() {
         setUnlockedZones((prev) => prev.includes(nextIndex) ? prev : [...prev, nextIndex]);
       }
     } catch (error) {
-      setApiError(error instanceof Error ? error.message : "Не удалось отправить ответ");
+      setApiError("Ошибка при проверке ответов");
     } finally {
       setIsSubmittingAnswer(false);
     }
@@ -255,11 +248,9 @@ export default function RoundOnePage() {
       {modalState === "task" && activeZone && (
         <TaskModal
           task={activeZone.task}
-          selectedAnswer={selectedAnswer}
           answerStatus={answerStatus}
           isSubmitting={isSubmittingAnswer}
           apiError={apiError}
-          onSelect={handleSelectAnswer}
           onCheck={handleCheckAnswer}
           onProceed={handleProceedAfterAnswer}
         />
