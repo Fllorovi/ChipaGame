@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -8,6 +7,9 @@ import { createClient } from "@/lib/supabase/client";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 
+const contactHref =
+  "https://mail.google.com/mail/?view=cm&fs=1&to=lukianovalexandr2%40mail.ru&su=Обращение%20по%20ChipaGame";
+
 export default function LoginPage() {
   const router = useRouter();
 
@@ -15,74 +17,72 @@ export default function LoginPage() {
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  
-async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-  event.preventDefault();
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
 
-  const form = event.currentTarget;
-  setMessage("");
-  setIsLoading(true);
+    const form = event.currentTarget;
+    setMessage("");
+    setIsLoading(true);
 
-  const formData = new FormData(form);
+    const formData = new FormData(form);
 
-  const email = String(formData.get("email") ?? "").trim();
-  const password = String(formData.get("password") ?? "");
+    const email = String(formData.get("email") ?? "").trim();
+    const password = String(formData.get("password") ?? "");
 
-  const supabase = createClient();
+    const supabase = createClient();
 
-  try {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    if (error) {
-      throw new Error("Неверная почта или пароль.");
+      if (error) {
+        throw new Error("Неверная почта или пароль.");
+      }
+
+      if (data.user) {
+        const { data: team, error: teamError } = await supabase
+          .from("teams")
+          .select("is_disqualified")
+          .eq("id", data.user.id)
+          .maybeSingle();
+
+        if (teamError) {
+          await supabase.auth.signOut();
+          throw new Error("Не удалось проверить статус команды.");
+        }
+
+        if (!team) {
+          await supabase.auth.signOut();
+          throw new Error("Аккаунт команды не найден.");
+        }
+
+        if (team.is_disqualified) {
+          await supabase.auth.signOut();
+          router.replace("/disqualified");
+          return;
+        }
+
+        router.push("/lobby");
+        router.refresh();
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Не удалось войти. Попробуйте ещё раз."
+      );
+    } finally {
+      setIsLoading(false);
     }
-
-    if (data.user) {
-      const { data: team, error: teamError } = await supabase
-        .from("teams")
-        .select("is_disqualified")
-        .eq("id", data.user.id)
-        .maybeSingle();
-
-      if (teamError) {
-        await supabase.auth.signOut();
-        throw new Error("Не удалось проверить статус команды.");
-      }
-
-      if (!team) {
-        await supabase.auth.signOut();
-        throw new Error("Аккаунт команды не найден.");
-      }
-
-      if (team.is_disqualified) {
-        await supabase.auth.signOut();
-        router.replace("/disqualified");
-        return;
-      }
-
-      router.push("/lobby");
-      router.refresh();
-    }
-  } catch (error) {
-    console.error("Login error:", error);
-
-    setMessage(
-      error instanceof Error
-        ? error.message
-        : "Не удалось войти. Попробуйте ещё раз."
-    );
-  } finally {
-    setIsLoading(false);
   }
-}
-
 
   return (
     <>
-      <Header actionLabel="Регистрация" actionHref="/register" />
+      <Header />
 
       <main className="relative flex h-[calc(100svh-76px-64px)] items-center justify-center overflow-hidden bg-[#030822] px-5 py-2 text-white">
         {/* Анимированные вспышки */}
@@ -122,10 +122,8 @@ async function handleSubmit(event: FormEvent<HTMLFormElement>) {
 
         {/* Основной контент */}
         <div className="relative z-10 w-full max-w-[1050px]">
-
           {/* Контент страницы */}
           <div className="grid items-center gap-12 lg:grid-cols-2">
-
             {/* Левая колонка */}
             <section className="max-w-md">
               <span className="mb-5 inline-flex rounded-full border border-[#55A4FE]/30 bg-[#55A4FE]/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] text-[#ABD2FB]">
@@ -135,9 +133,7 @@ async function handleSubmit(event: FormEvent<HTMLFormElement>) {
               <h1 className="mb-6 text-4xl font-black leading-tight tracking-tight sm:text-5xl">
                 Ваша команда
                 <br />
-                <span className="text-[#55A4FE]">
-                  снова в игре.
-                </span>
+                <span className="text-[#55A4FE]">снова в игре.</span>
               </h1>
 
               <p className="text-base leading-relaxed text-white/60 sm:text-lg">
@@ -157,7 +153,6 @@ async function handleSubmit(event: FormEvent<HTMLFormElement>) {
 
             {/* Карточка входа */}
             <section className="rounded-[28px] border border-white/10 bg-white/[0.08] p-7 shadow-2xl shadow-black/30 backdrop-blur-2xl sm:p-10">
-
               <div className="mb-8">
                 <h2 className="text-2xl font-bold text-white">
                   Вход в аккаунт
@@ -169,7 +164,6 @@ async function handleSubmit(event: FormEvent<HTMLFormElement>) {
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-5">
-
                 {/* Электронная почта */}
                 <div>
                   <label
@@ -246,11 +240,52 @@ async function handleSubmit(event: FormEvent<HTMLFormElement>) {
                     </span>
                   )}
                 </button>
-
               </form>
 
-              
+              {/* Ссылки под формой */}
+                            {/* Ссылки под формой */}
+              <div className="mt-6 border-t border-[#55A4FE]/10 pt-5">
+                <a
+                  href={contactHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group flex w-full items-center justify-between gap-3 rounded-xl border border-[#55A4FE]/25 bg-[#55A4FE]/[0.06] px-5 py-3.5 text-sm font-semibold text-[#ABD2FB]/85 transition-all hover:border-[#55A4FE]/50 hover:bg-[#55A4FE]/[0.12] hover:text-[#78B7FF]"
+                >
+                  {/* Иконка конверта */}
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="h-5 w-5 shrink-0"
+                  >
+                    <rect x="2" y="4" width="20" height="16" rx="2" />
+                    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                  </svg>
 
+                  <span className="flex-1 text-center">
+                    Связаться с организаторами
+                  </span>
+
+                  {/* Стрелка */}
+                  <span className="shrink-0 transition-transform group-hover:translate-x-1">
+                    →
+                  </span>
+                </a>
+
+                <div className="mt-3 text-center">
+                  <a
+                    href="/forgot-password"
+                    className="text-xs font-semibold text-[#ABD2FB]/60 transition-colors hover:text-[#55A4FE]"
+                  >
+                    Забыли пароль?
+                  </a>
+                </div>
+              
+              </div>
             </section>
           </div>
         </div>

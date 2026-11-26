@@ -5,18 +5,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-interface HeaderProps {
-    actionLabel?: string;
-    actionHref?: string;
-}
-
 const contactHref =
     "https://mail.google.com/mail/?view=cm&fs=1&to=lukianovalexandr2%40mail.ru&su=Обращение%20по%20ChipaGame";
 
-export default function Header({
-    actionLabel = "Стать участником",
-    actionHref = "/register",
-}: HeaderProps) {
+export default function Header() {
     const router = useRouter();
     const profileMenuRef = useRef<HTMLDivElement>(null);
 
@@ -273,17 +265,7 @@ export default function Header({
                                 </div>
                             )}
                         </div>
-                    ) : (
-                        !isChecking && (
-                            <Link
-                                href={actionHref}
-                                className="hidden rounded-xl bg-[#0084FF] px-6 py-3 text-sm font-bold text-white shadow-lg shadow-blue-500/20 transition-all hover:-translate-y-0.5 hover:bg-[#006FE0] sm:inline-flex"
-                            >
-                                {actionLabel}
-                                <span className="ml-2">→</span>
-                            </Link>
-                        )
-                    )}
+                    ) : null}
 
                     <details className="relative md:hidden">
                         <summary className="flex h-11 w-11 cursor-pointer list-none items-center justify-center rounded-xl border border-white/15 bg-white/5 text-white transition-colors hover:bg-white/10">
@@ -343,19 +325,6 @@ export default function Header({
                                     >
                                         Админ-панель
                                     </Link>
-                                )}
-
-                                {!isChecking && !teamName && !isAdmin && (
-                                    <>
-                                        <div className="my-2 h-px bg-white/10" />
-
-                                        <Link
-                                            href={actionHref}
-                                            className="rounded-xl bg-[#0084FF] px-4 py-3 text-center text-sm font-bold text-white transition-colors hover:bg-[#006FE0]"
-                                        >
-                                            {actionLabel}
-                                        </Link>
-                                    </>
                                 )}
                             </nav>
                         </div>
