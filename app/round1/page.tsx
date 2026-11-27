@@ -54,15 +54,9 @@ export default function RoundOnePage() {
   const timeUp = secondsLeft === 0;
 
   useEffect(() => {
-    if (timeUp) {
-      const supabase = createClient();
-
-      async function signOut() {
-        await supabase.auth.signOut();
-      }
-
-      void signOut();
-    }
+  if (timeUp) {
+    window.location.href = "/rating";
+  }
   }, [timeUp]);
 
   const activeZone = selectedZone !== null ? zones[selectedZone] : null;
@@ -281,7 +275,7 @@ export default function RoundOnePage() {
   };
 
   const handleEndEarly = () => {
-    setSecondsLeft(0);
+    
   };
 
   const currentDialogues = getDialoguesForPhase();

@@ -450,10 +450,13 @@ export default function AdminPage() {
                   </Link>
                 </div>
 
+                
+
                 {/* Запуск второго тура */}
                 <div className="mt-auto border-t border-white/10 pt-5">
                   <button
                     type="button"
+                    onClick={() => router.push("/round2-promo")}
                     disabled
                     className="w-full cursor-not-allowed rounded-xl bg-[#0084FF]/40 px-7 py-4 text-base font-bold text-white/50"
                   >
@@ -461,9 +464,11 @@ export default function AdminPage() {
                   </button>
 
                   <p className="mt-3 text-center text-xs text-white/35">
-                    Сначала завершите первый тур и определите список участников второго тура.
+                    Сначала завершите первый тур и определите список допущенных команд.
                   </p>
                 </div>
+
+
               </div>
             </section>
           </div>

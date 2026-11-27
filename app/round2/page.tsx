@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { useRouter } from "next/navigation";
 import { zones } from "./zones";
 // import { tasks } from "./tasks"; // Больше не нужен на фронте, если проверяет сервер
 import { ROUND_SECONDS, computeWaterLevel } from "./constants";
@@ -23,6 +23,7 @@ type SavedAnswer = {
 };
 
 export default function RoundTwoPage() {
+  const router = useRouter();
   const [selectedZone, setSelectedZone] = useState<number | null>(null);
   const [unlockedZones, setUnlockedZones] = useState<number[]>([0]);
   const [completedZones, setCompletedZones] = useState<number[]>([]);
@@ -52,14 +53,10 @@ export default function RoundTwoPage() {
   const timeUp = secondsLeft === 0;
 
   useEffect(() => {
-    if (timeUp) {
-      const supabase = createClient();
-      async function signOut() {
-        await supabase.auth.signOut();
-      }
-      void signOut();
-    }
-  }, [timeUp]);
+  if (timeUp) {
+    router.replace("/rating");
+  }
+  }, [timeUp, router]);
 
   const activeZone = selectedZone !== null ? zones[selectedZone] : null;
 
@@ -176,8 +173,9 @@ export default function RoundTwoPage() {
   };
 
   const handleEndEarly = () => {
-    setSecondsLeft(0); 
-  };
+  setModalState("none");
+  setSelectedZone(null);
+};
 
   const currentDialogues = getDialoguesForPhase();
 
