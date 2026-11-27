@@ -2,8 +2,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
-const validOptions = ["a", "b", "c", "d"];
-
 export async function POST(request: Request) {
   try {
     const supabase = await createClient();
@@ -23,7 +21,7 @@ export async function POST(request: Request) {
     const body = await request.json();
 
     const zoneId = Number(body.zoneId);
-    const optionId = body.optionId;
+    const answers = body.answers;
 
     if (!Number.isInteger(zoneId) || zoneId < 1 || zoneId > 5) {
       return NextResponse.json(
@@ -33,20 +31,32 @@ export async function POST(request: Request) {
     }
 
     if (
-      typeof optionId !== "string" ||
-      !validOptions.includes(optionId)
+      !answers ||
+      typeof answers !== "object" ||
+      Array.isArray(answers) ||
+      !["a", "b", "c"].every(
+        (key) =>
+          typeof answers[key] === "string" &&
+          answers[key].trim().length > 0
+      )
     ) {
       return NextResponse.json(
-        { error: "Invalid option ID" },
+        { error: "Please provide all three answers" },
         { status: 400 }
       );
     }
+
+    const cleanAnswers = {
+      a: answers.a.trim(),
+      b: answers.b.trim(),
+      c: answers.c.trim(),
+    };
 
     const { data, error } = await supabase.rpc(
       "submit_round2_answer",
       {
         p_zone_id: zoneId,
-        p_option_id: optionId,
+        p_answers: cleanAnswers,
       }
     );
 

@@ -3,7 +3,6 @@ import React from "react";
 export type TaskInput = {
   id: string;
   placeholder: string;
-  correctAnswer: string;
 };
 
 export type ZoneTask = {
@@ -62,9 +61,9 @@ export const tasks: Record<number, ZoneTask> = {
       </div>
     ),
     inputs: [
-      { id: "a", placeholder: "Ответ на пункт а", correctAnswer: "13" },
-      { id: "b", placeholder: "Ответ на пункт б", correctAnswer: "10" },
-      { id: "c", placeholder: "Ответ на пункт в", correctAnswer: "11" },
+      { id: "a", placeholder: "Ответ на пункт а" },
+      { id: "b", placeholder: "Ответ на пункт б" },
+      { id: "c", placeholder: "Ответ на пункт в" },
     ],
   },
   2: {
@@ -111,9 +110,9 @@ export const tasks: Record<number, ZoneTask> = {
       </div>
     ),
     inputs: [
-      { id: "a", placeholder: "Ответ на пункт а", correctAnswer: "10" },
-      { id: "b", placeholder: "Ответ на пункт б", correctAnswer: "13" },
-      { id: "c", placeholder: "Ответ на пункт в", correctAnswer: "15" },
+      { id: "a", placeholder: "Ответ на пункт а" },
+      { id: "b", placeholder: "Ответ на пункт б"},
+      { id: "c", placeholder: "Ответ на пункт в" },
     ],
   },
   3: {
@@ -142,9 +141,9 @@ export const tasks: Record<number, ZoneTask> = {
       </div>
     ),
     inputs: [
-      { id: "a", placeholder: "Ответ на пункт а", correctAnswer: "420" },
-      { id: "b", placeholder: "Ответ на пункт б", correctAnswer: "342" },
-      { id: "c", placeholder: "Ответ на пункт в", correctAnswer: "4098600" },
+      { id: "a", placeholder: "Ответ на пункт а" },
+      { id: "b", placeholder: "Ответ на пункт б" },
+      { id: "c", placeholder: "Ответ на пункт в" },
     ],
   },
   4: {
@@ -175,9 +174,9 @@ export const tasks: Record<number, ZoneTask> = {
       </div>
     ),
     inputs: [
-      { id: "a", placeholder: "Ответ на пункт а", correctAnswer: "1" },
-      { id: "b", placeholder: "Ответ на пункт б", correctAnswer: "5" },
-      { id: "c", placeholder: "Ответ на пункт в (буква)", correctAnswer: "Б" },
+      { id: "a", placeholder: "Ответ на пункт а" },
+      { id: "b", placeholder: "Ответ на пункт б" },
+      { id: "c", placeholder: "Ответ на пункт в (буква)" },
     ],
   },
   5: {
@@ -224,9 +223,9 @@ export const tasks: Record<number, ZoneTask> = {
       </div>
     ),
     inputs: [
-      { id: "a", placeholder: "Ответ на пункт а", correctAnswer: "13" },
-      { id: "b", placeholder: "Ответ на пункт б", correctAnswer: "11" },
-      { id: "c", placeholder: "Ответ на пункт в", correctAnswer: "11" },
+      { id: "a", placeholder: "Ответ на пункт а" },
+      { id: "b", placeholder: "Ответ на пункт б"},
+      { id: "c", placeholder: "Ответ на пункт в" },
     ],
   },
 };

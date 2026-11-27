@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -26,12 +27,14 @@ export default function TaskModal({
     setAnswers((prev) => ({ ...prev, [id]: value }));
   };
 
-  const allFilled = task.inputs.every((input) => (answers[input.id] || "").trim().length > 0);
+  const allFilled = task.inputs.every(
+    (input) => (answers[input.id] || "").trim().length > 0
+  );
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
       <div className="w-full max-w-2xl rounded-2xl border border-[#55A4FE]/30 bg-[#03172c] p-6 text-white shadow-2xl shadow-[#55A4FE]/10 max-h-[90vh] flex flex-col">
-        
+
         <div className="mb-4 flex items-center justify-between border-b border-white/10 pb-3 shrink-0">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#69caff]">
@@ -42,7 +45,7 @@ export default function TaskModal({
         </div>
 
         <div className="space-y-4 text-sm overflow-y-auto pr-2 custom-scrollbar">
-          
+
           <div className="rounded-xl border border-[#55A4FE]/30 bg-[#55A4FE]/10 p-4">
             {task.description}
           </div>
@@ -53,10 +56,13 @@ export default function TaskModal({
                 <label className="text-xs font-bold text-[#69caff] uppercase mb-1">
                   Пункт {input.id}
                 </label>
+
                 <input
                   type="text"
                   value={answers[input.id] || ""}
-                  onChange={(e) => handleInputChange(input.id, e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange(input.id, e.target.value)
+                  }
                   disabled={answerStatus !== "idle" || isSubmitting}
                   placeholder={input.placeholder}
                   className="rounded-xl border-2 border-white/10 bg-[#0a1628] p-3 text-sm font-semibold text-white placeholder-white/20 outline-none transition-colors focus:border-[#55A4FE] disabled:opacity-50"
@@ -72,14 +78,27 @@ export default function TaskModal({
           )}
 
           {answerStatus === "wrong" && (
-            <div className="text-center p-3 rounded-lg bg-red-500/10 border border-red-500/30">
-              <p className="text-sm font-bold text-red-400">Есть ошибки. Узел не починен.</p>
+            <div className="text-center p-4 rounded-lg bg-red-500/10 border border-red-500/30">
+              <p className="text-sm font-bold text-red-400">
+                Ответы приняты и сохранены.
+              </p>
+              <p className="text-sm text-red-300 mt-1">
+                К сожалению, есть ошибки. Узел не починен.
+              </p>
+              <p className="text-xs text-white/50 mt-2">
+                Повторная попытка не предусмотрена.
+              </p>
             </div>
           )}
 
           {answerStatus === "correct" && (
-            <div className="text-center p-3 rounded-lg bg-green-500/10 border border-green-500/30">
-              <p className="text-sm font-bold text-green-400">Верно! Узел восстановлен.</p>
+            <div className="text-center p-4 rounded-lg bg-green-500/10 border border-green-500/30">
+              <p className="text-sm font-bold text-green-400">
+                Все три ответа верны!
+              </p>
+              <p className="text-sm text-green-300 mt-1">
+                Узел успешно починен.
+              </p>
             </div>
           )}
 
@@ -103,7 +122,7 @@ export default function TaskModal({
               disabled={isSubmitting || !allFilled}
               className="flex-1 rounded-xl bg-gradient-to-r from-[#0876c7] to-[#07549a] px-4 py-3 text-sm font-bold text-white shadow-lg shadow-blue-500/20 transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {isSubmitting ? "Проверка..." : "Сдать ответы"}
+              {isSubmitting ? "Сохраняем ответы..." : "Сдать ответы"}
             </button>
           )}
         </div>

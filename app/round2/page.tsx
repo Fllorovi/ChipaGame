@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { zones } from "./zones";
-import { tasks } from "./tasks"; // <-- Импорт заданий
+// import { tasks } from "./tasks"; // Больше не нужен на фронте, если проверяет сервер
 import { ROUND_SECONDS, computeWaterLevel } from "./constants";
 import Timer from "./components/Timer";
 import ProgressBar from "./components/ProgressBar";
@@ -128,7 +128,7 @@ export default function RoundTwoPage() {
     }
   };
 
-  // Новая логика проверки
+  // ВОЗВРАЩЕНА СЕРВЕРНАЯ ЛОГИКА
   const handleCheckAnswer = async (answers: Record<string, string>) => {
     if (!activeZone || selectedZone === null || isSubmittingAnswer) return;
 
@@ -136,20 +136,19 @@ export default function RoundTwoPage() {
     setApiError(null);
 
     try {
-      const taskDef = tasks[activeZone.id];
-      let allCorrect = true;
-      
-      for (const input of taskDef.inputs) {
-        const userAnswer = (answers[input.id] || "").trim().toUpperCase();
-        const correctAnswer = input.correctAnswer.toUpperCase();
-        
-        if (userAnswer !== correctAnswer) {
-          allCorrect = false;
-          break;
-        }
-      }
+      const response = await fetch("/api/round2/answer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          zoneId: activeZone.id, 
+          answers: answers // Отправляем объект с ответами
+        }),
+      });
 
-      const isCorrect = allCorrect;
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error ?? "Не удалось сохранить ответ");
+
+      const isCorrect = data.is_correct;
       setAnswerStatus(isCorrect ? "correct" : "wrong");
 
       const nextCompleted = isCorrect ? Array.from(new Set([...completedZones, selectedZone])) : completedZones;
@@ -164,7 +163,7 @@ export default function RoundTwoPage() {
         setUnlockedZones((prev) => prev.includes(nextIndex) ? prev : [...prev, nextIndex]);
       }
     } catch (error) {
-      setApiError("Ошибка при проверке ответов");
+      setApiError(error instanceof Error ? error.message : "Не удалось отправить ответ");
     } finally {
       setIsSubmittingAnswer(false);
     }
