@@ -1,9 +1,10 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { zones } from "./zones";
-import { tasks } from "./tasks"; // <-- ДОБАВЛЕН ИМПОРТ ЗАДАНИЙ
+import { tasks } from "./tasks";
 import { ROUND_SECONDS, computeWaterLevel } from "./constants";
 import Timer from "./components/Timer";
 import ProgressBar from "./components/ProgressBar";
@@ -32,7 +33,6 @@ export default function RoundOnePage() {
   const [dialoguePhase, setDialoguePhase] = useState<"intro" | "post">("intro");
   const [dialogueIndex, setDialogueIndex] = useState(0);
 
-  // Убрали selectedAnswer
   const [answerStatus, setAnswerStatus] = useState<"idle" | "wrong" | "correct">("idle");
 
   const [waterLevel, setWaterLevel] = useState(computeWaterLevel(0, 0));
@@ -42,37 +42,41 @@ export default function RoundOnePage() {
   const [apiError, setApiError] = useState<string | null>(null);
 
   const [secondsLeft, setSecondsLeft] = useState(ROUND_SECONDS);
-  
+
   useEffect(() => {
     const id = setInterval(() => {
       setSecondsLeft((s) => (s > 0 ? s - 1 : 0));
     }, 1000);
+
     return () => clearInterval(id);
   }, []);
-  
+
   const timeUp = secondsLeft === 0;
 
   useEffect(() => {
     if (timeUp) {
       const supabase = createClient();
+
       async function signOut() {
         await supabase.auth.signOut();
       }
+
       void signOut();
     }
   }, [timeUp]);
 
   const activeZone = selectedZone !== null ? zones[selectedZone] : null;
 
+  // Загружаем сохранённый прогресс
   useEffect(() => {
     async function loadProgress() {
       try {
         const response = await fetch("/api/round1/progress");
-        
+
         const contentType = response.headers.get("content-type");
+
         if (!contentType || !contentType.includes("application/json")) {
           console.warn("API вернул не JSON. Игра запущена без загрузки прошлого прогресса.");
-          setIsLoadingProgress(false);
           return;
         }
 
@@ -84,25 +88,48 @@ export default function RoundOnePage() {
 
         const answers: SavedAnswer[] = data.answers ?? [];
 
-        const completed = answers.filter((answer) => answer.is_correct).map((answer) => answer.zone_id - 1);
-        const failed = answers.filter((answer) => !answer.is_correct).map((answer) => answer.zone_id - 1);
-        const unlocked = Array.from(new Set([0, ...answers.map((answer) => answer.zone_id).filter((zoneId) => zoneId < zones.length)]));
+        const completed = answers
+          .filter((answer) => answer.is_correct)
+          .map((answer) => answer.zone_id - 1);
+
+        const failed = answers
+          .filter((answer) => !answer.is_correct)
+          .map((answer) => answer.zone_id - 1);
+
+        const unlocked = Array.from(
+          new Set([
+            0,
+            ...answers
+              .map((answer) => answer.zone_id)
+              .filter((zoneId) => zoneId < zones.length),
+          ])
+        );
 
         setCompletedZones(completed);
         setFailedZones(failed);
         setUnlockedZones(unlocked);
-        setWaterLevel(computeWaterLevel(completed.length, failed.length));
+
+        setWaterLevel(
+          computeWaterLevel(completed.length, failed.length)
+        );
       } catch (error) {
         console.error("Ошибка загрузки прогресса:", error);
       } finally {
         setIsLoadingProgress(false);
       }
     }
-    loadProgress();
+
+    void loadProgress();
   }, []);
 
   const handleZoneClick = (index: number) => {
-    if (timeUp || isLoadingProgress || !unlockedZones.includes(index) || completedZones.includes(index) || failedZones.includes(index)) {
+    if (
+      timeUp ||
+      isLoadingProgress ||
+      !unlockedZones.includes(index) ||
+      completedZones.includes(index) ||
+      failedZones.includes(index)
+    ) {
       return;
     }
 
@@ -116,12 +143,19 @@ export default function RoundOnePage() {
 
   const getDialoguesForPhase = () => {
     if (!activeZone) return [];
-    if (dialoguePhase === "intro") return activeZone.dialogues;
-    return answerStatus === "correct" ? activeZone.successDialogues : activeZone.failureDialogues;
+
+    if (dialoguePhase === "intro") {
+      return activeZone.dialogues;
+    }
+
+    return answerStatus === "correct"
+      ? activeZone.successDialogues
+      : activeZone.failureDialogues;
   };
 
   const handleNextDialogue = () => {
     if (!activeZone) return;
+
     const currentDialogues = getDialoguesForPhase();
 
     if (dialogueIndex < currentDialogues.length - 1) {
@@ -139,43 +173,102 @@ export default function RoundOnePage() {
     }
   };
 
-  // Логика проверки ответов
-  const handleCheckAnswer = async (answers: Record<string, string>) => {
-    if (!activeZone || selectedZone === null || isSubmittingAnswer) return;
+  // Проверка ответов на сервере
+  const handleCheckAnswer = async (
+    answers: Record<string, string>
+  ) => {
+    if (!activeZone || selectedZone === null || isSubmittingAnswer) {
+      return;
+    }
 
     setIsSubmittingAnswer(true);
     setApiError(null);
 
     try {
       const taskDef = tasks[activeZone.id];
-      let allCorrect = true;
-      
-      for (const input of taskDef.inputs) {
-        const userAnswer = (answers[input.id] || "").trim().toUpperCase();
-        const correctAnswer = input.correctAnswer.toUpperCase();
-        
-        if (userAnswer !== correctAnswer) {
-          allCorrect = false;
-          break;
-        }
+      const inputs = taskDef.inputs;
+
+      if (inputs.length !== 3) {
+        throw new Error("В задании должно быть ровно три поля");
       }
 
-      const isCorrect = allCorrect;
+      const cleanAnswers = {
+        a: (answers[inputs[0].id] || "").trim(),
+        b: (answers[inputs[1].id] || "").trim(),
+        c: (answers[inputs[2].id] || "").trim(),
+      };
+
+      if (
+        !cleanAnswers.a ||
+        !cleanAnswers.b ||
+        !cleanAnswers.c
+      ) {
+        setApiError("Заполни все три поля");
+        return;
+      }
+
+      const response = await fetch("/api/round1/answer", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          zoneId: activeZone.id,
+          answers: cleanAnswers,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.error || "Не удалось проверить ответ"
+        );
+      }
+
+      if (typeof data.is_correct !== "boolean") {
+        throw new Error("Сервер вернул некорректный результат");
+      }
+
+      const isCorrect = data.is_correct;
+
       setAnswerStatus(isCorrect ? "correct" : "wrong");
 
-      const nextCompleted = isCorrect ? Array.from(new Set([...completedZones, selectedZone])) : completedZones;
-      const nextFailed = !isCorrect ? Array.from(new Set([...failedZones, selectedZone])) : failedZones;
+      const nextCompleted = isCorrect
+        ? Array.from(new Set([...completedZones, selectedZone]))
+        : completedZones;
+
+      const nextFailed = !isCorrect
+        ? Array.from(new Set([...failedZones, selectedZone]))
+        : failedZones;
 
       setCompletedZones(nextCompleted);
       setFailedZones(nextFailed);
-      setWaterLevel(computeWaterLevel(nextCompleted.length, nextFailed.length));
+
+      setWaterLevel(
+        computeWaterLevel(
+          nextCompleted.length,
+          nextFailed.length
+        )
+      );
 
       const nextIndex = selectedZone + 1;
+
       if (nextIndex < zones.length) {
-        setUnlockedZones((prev) => prev.includes(nextIndex) ? prev : [...prev, nextIndex]);
+        setUnlockedZones((prev) =>
+          prev.includes(nextIndex)
+            ? prev
+            : [...prev, nextIndex]
+        );
       }
     } catch (error) {
-      setApiError("Ошибка при проверке ответов");
+      console.error("Round 1 answer error:", error);
+
+      setApiError(
+        error instanceof Error
+          ? error.message
+          : "Ошибка при проверке ответов"
+      );
     } finally {
       setIsSubmittingAnswer(false);
     }
@@ -188,7 +281,7 @@ export default function RoundOnePage() {
   };
 
   const handleEndEarly = () => {
-    setSecondsLeft(0); 
+    setSecondsLeft(0);
   };
 
   const currentDialogues = getDialoguesForPhase();
@@ -200,7 +293,10 @@ export default function RoundOnePage() {
       {isLoadingProgress && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#03172c]">
           <div className="text-center">
-            <div className="mb-4 text-lg font-bold text-[#69caff]">Загрузка игрового прогресса...</div>
+            <div className="mb-4 text-lg font-bold text-[#69caff]">
+              Загрузка игрового прогресса...
+            </div>
+
             <div className="mx-auto h-2 w-48 overflow-hidden rounded-full bg-white/10">
               <div className="h-full w-1/2 animate-pulse rounded-full bg-[#55A4FE]" />
             </div>
@@ -215,7 +311,12 @@ export default function RoundOnePage() {
       )}
 
       <Timer secondsLeft={secondsLeft} />
-      <ProgressBar completed={completedZones.length} total={zones.length} />
+
+      <ProgressBar
+        completed={completedZones.length}
+        total={zones.length}
+      />
+
       <IslandWidget waterLevel={waterLevel} />
       <OceanBackground />
 
@@ -233,7 +334,9 @@ export default function RoundOnePage() {
         <span>СИСТЕМА НАВИГАЦИИ / ONLINE</span>
       </div>
 
-      {activeZone && <ZoneBackground taskId={activeZone.id} />}
+      {activeZone && (
+        <ZoneBackground taskId={activeZone.id} />
+      )}
 
       {modalState === "dialogue" && activeZone && (
         <DialogueModal

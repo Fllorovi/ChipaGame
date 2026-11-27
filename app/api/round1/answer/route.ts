@@ -6,7 +6,6 @@ export async function POST(request: Request) {
   try {
     const supabase = await createClient();
 
-    // Проверяем авторизацию пользователя
     const {
       data: { user },
       error: authError,
@@ -19,77 +18,69 @@ export async function POST(request: Request) {
       );
     }
 
-    // Получаем данные ответа
     const body = await request.json();
 
     const zoneId = Number(body.zoneId);
-    const optionId = body.optionId;
+    const answers = body.answers;
 
-    // Проверяем номер вопроса
-    const MAX_ZONES = 5;
-
-    if (!Number.isInteger(zoneId) || zoneId < 1 || zoneId > MAX_ZONES) {
+    if (!Number.isInteger(zoneId) || zoneId < 1 || zoneId > 5) {
       return NextResponse.json(
-        {
-          error: `Неверный zoneId. Ожидается число от 1 до ${MAX_ZONES}.`,
-        },
+        { error: "Неверный номер зоны" },
         { status: 400 }
       );
     }
 
-    // Проверяем вариант ответа
     if (
-      typeof optionId !== "string" ||
-      !["a", "b", "c", "d"].includes(optionId)
+      !answers ||
+      typeof answers !== "object" ||
+      Array.isArray(answers) ||
+      !["a", "b", "c"].every(
+        (key) =>
+          typeof answers[key] === "string" &&
+          answers[key].trim().length > 0
+      )
     ) {
       return NextResponse.json(
-        { error: "Недопустимый вариант ответа" },
+        { error: "Необходимо заполнить все три ответа" },
         { status: 400 }
       );
     }
 
-    // Проверяем ответ и сохраняем его через Supabase RPC
+    const cleanAnswers = {
+      a: answers.a.trim(),
+      b: answers.b.trim(),
+      c: answers.c.trim(),
+    };
+
     const { data, error } = await supabase.rpc(
-      "submit_round1_answer",
+      "submit_round1_text_answer",
       {
         p_zone_id: zoneId,
-        p_option_id: optionId,
+        p_answers: cleanAnswers,
       }
     );
 
-    // Не скрываем ошибки базы данных
     if (error) {
-      console.error("Round 1 answer DB error:", {
-        message: error.message,
-        details: error.details,
-        hint: error.hint,
-        code: error.code,
-        zoneId,
-        optionId,
-        userId: user.id,
-      });
+  console.error("Round 1 answer DB error:", error);
 
-      return NextResponse.json(
-        { error: "Не удалось сохранить ответ. Попробуйте ещё раз." },
-        { status: 500 }
-      );
-    }
+  return NextResponse.json(
+    {
+      error: "Ошибка базы данных: " + error.message,
+      code: error.code,
+      details: error.details,
+      hint: error.hint,
+    },
+    { status: 500 }
+  );
+}
 
-    // Проверяем результат RPC
     if (!data || !Array.isArray(data) || data.length === 0) {
-      console.error("Round 1 answer: RPC returned empty result", {
-        zoneId,
-        optionId,
-        userId: user.id,
-      });
-
       return NextResponse.json(
-        { error: "Не удалось получить результат проверки ответа." },
+        { error: "Не удалось получить результат проверки" },
         { status: 500 }
       );
     }
 
-    // Возвращаем результат проверки
     return NextResponse.json(data[0]);
   } catch (error) {
     console.error("Round 1 API error:", error);
